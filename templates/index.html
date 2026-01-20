@@ -21,7 +21,7 @@
             <button class="btn-icon" title="Add Video" onclick="openAddVideoModal()">
                 <i class="fas fa-plus"></i>
             </button>
-            <button class="btn-icon" title="Settings">
+            <button class="btn-icon" title="Settings" onclick="openSettingsModal()">
                 <i class="fas fa-cog"></i>
             </button>
             <button class="btn-icon" title="Profile">
@@ -104,7 +104,17 @@
                 </form>
             </section>
 
-            <!-- All Videos Section -->
+            <!-- Telegram Sync Section -->
+            <section style="background: linear-gradient(135deg, rgba(0, 136, 204, 0.1), rgba(0, 136, 204, 0.05)); border: 1px solid rgba(0, 136, 204, 0.3); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+                <h3><i class="fab fa-telegram" style="color: #0088cc;"></i> Sync Telegram Videos</h3>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 1rem 0;">Import videos from Telegram channels to your library</p>
+                <div style="display: flex; gap: 1rem;">
+                    <input type="text" id="telegramChannel" placeholder="@channel_name (e.g., @Rk_Movie096)" value="@Rk_Movie096" style="flex: 1; padding: 0.75rem; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;">
+                    <button onclick="syncTelegram()" style="background: #0088cc; color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; min-width: 150px;">
+                        <i class="fas fa-sync"></i> Sync Now
+                    </button>
+                </div>
+            </section>
             <section>
                 <h2 class="section-title">
                     <i class="fas fa-video"></i> Latest Videos
@@ -145,7 +155,7 @@
                     <i class="fas fa-folder-open"></i> Your Folders
                 </h2>
                 <div class="folders-grid" id="foldersGrid">
-                    {% for folder, count in folders.items() %}
+                    {% for folder_name, folder_data in folder_hierarchy.items() %}
                         <a href="/folder/{{ folder }}" class="folder-card">
                             <div>
                                 <div class="folder-icon">
@@ -188,13 +198,48 @@
 
                 // Populate sidebar
                 const foldersList = document.getElementById('foldersList');
-                foldersList.innerHTML = folders.map(folder => `
-                    <a href="/folder/${folder.name}" class="sidebar-item">
-                        <i class="fas fa-folder"></i>
-                        <span>${folder.name}</span>
-                        <span style="margin-left: auto; color: var(--text-secondary); font-size: 0.85rem;">${folder.count}</span>
-                    </a>
-                `).join('');
+
+                function renderFolderHierarchy(hierarchy, prefix = '') {
+                    let html = '';
+                    for (const [name, data] of Object.entries(hierarchy)) {
+                        const fullPath = prefix ? `${prefix}/${name}` : name;
+                        const indent = prefix ? 'margin-left: ' + (prefix.split('/').length * 12) + 'px;' : '';
+                        const icon = data.subfolders && Object.keys(data.subfolders).length > 0 ? 'fa-folder-open' : 'fa-folder';
+
+                        html += `
+                            <a href="/folder/${fullPath}" class="sidebar-item" style="${indent}">
+                                <i class="fas ${icon}"></i>
+                                <span>${name}</span>
+                                <span style="margin-left: auto; color: var(--text-secondary); font-size: 0.85rem;">${data.count}</span>
+                            </a>
+                        `;
+
+                        // Recursively render subfolders
+                        if (data.subfolders && Object.keys(data.subfolders).length > 0) {
+                            html += renderFolderHierarchy(data.subfolders, fullPath);
+                        }
+                    }
+                    return html;
+                }
+
+                // Get folder hierarchy from the API response
+                const folderHierarchy = folders.reduce((acc, folder) => {
+                    const parts = folder.path.split('/');
+                    let current = acc;
+                    for (let i = 0; i < parts.length; i++) {
+                        const part = parts[i];
+                        if (!current[part]) {
+                            current[part] = { count: 0, subfolders: {} };
+                        }
+                        if (i === parts.length - 1) {
+                            current[part].count = folder.count;
+                        }
+                        current = current[part].subfolders;
+                    }
+                    return acc;
+                }, {});
+
+                foldersList.innerHTML = renderFolderHierarchy(folderHierarchy);
 
                 // Populate select dropdown
                 const folderSelect = document.getElementById('folderSelect');
@@ -226,7 +271,11 @@
             // Submit form
             const formData = new FormData();
             formData.append('url', url);
-            formData.append('folder_name', folder_name);
+            if (folderSelect) {
+                formData.append('folder_path', folder_name);
+            } else {
+                formData.append('new_folder', folder_name);
+            }
 
             fetch('/add_video', {
                 method: 'POST',
@@ -282,6 +331,32 @@
             alert(message); // Replace with a better notification system
         }
 
+        async function syncTelegram() {
+            const channel = document.getElementById('telegramChannel').value.trim();
+            if (!channel) {
+                showError('Please enter a channel name');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/telegram/sync/${encodeURIComponent(channel)}`, {
+                    method: 'GET'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to sync channel');
+                }
+
+                const data = await response.json();
+                showSuccess('✅ Syncing ' + channel + '... This may take a minute.');
+                
+                // Reload page after 5 seconds
+                setTimeout(() => location.reload(), 5000);
+            } catch (error) {
+                showError('Error syncing Telegram: ' + error.message);
+            }
+        }
+
         // Toggle sidebar on mobile
         const sidebarToggle = document.querySelector('.btn-icon:first-of-type');
         sidebarToggle?.addEventListener('click', function() {
@@ -295,6 +370,72 @@
                 closeAddVideoModal();
             }
         });
+
+        function openSettingsModal() {
+            const modal = document.getElementById('settingsModal');
+            if (!modal) {
+                // Create settings modal
+                const settingsHTML = `
+                    <div id="settingsModal" class="modal" onclick="closeSettingsModal()">
+                        <div class="modal-content" onclick="event.stopPropagation()">
+                            <div class="modal-header">
+                                <h2><i class="fas fa-cog"></i> Settings</h2>
+                                <button class="close-btn" onclick="closeSettingsModal()"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div class="modal-body" style="padding: 2rem;">
+                                <div class="form-group">
+                                    <label><i class="fab fa-telegram"></i> Telegram API ID</label>
+                                    <input type="text" id="apiIdInput" placeholder="Enter your API ID from https://my.telegram.org/apps">
+                                </div>
+                                <div class="form-group" style="margin-top: 1rem;">
+                                    <label><i class="fab fa-telegram"></i> Telegram API Hash</label>
+                                    <input type="text" id="apiHashInput" placeholder="Enter your API Hash">
+                                </div>
+                                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 1rem;">
+                                    📱 Don't have credentials? <a href="https://my.telegram.org/apps" target="_blank" style="color: #0088cc;">Get them here</a>
+                                </p>
+                                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                                    <button onclick="saveSettings()" style="flex: 1; background: #0088cc; color: white; padding: 0.75rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                                        <i class="fas fa-save"></i> Save Settings
+                                    </button>
+                                    <button onclick="closeSettingsModal()" style="flex: 1; background: var(--secondary-color); color: var(--text-primary); padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', settingsHTML);
+                
+                // Load saved settings
+                const apiId = localStorage.getItem('apiId') || '';
+                const apiHash = localStorage.getItem('apiHash') || '';
+                document.getElementById('apiIdInput').value = apiId;
+                document.getElementById('apiHashInput').value = apiHash;
+            }
+            document.getElementById('settingsModal').classList.add('active');
+        }
+
+        function closeSettingsModal() {
+            const modal = document.getElementById('settingsModal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function saveSettings() {
+            const apiId = document.getElementById('apiIdInput').value.trim();
+            const apiHash = document.getElementById('apiHashInput').value.trim();
+            
+            if (!apiId || !apiHash) {
+                alert('❌ Please enter both API ID and API Hash');
+                return;
+            }
+            
+            localStorage.setItem('apiId', apiId);
+            localStorage.setItem('apiHash', apiHash);
+            alert('✅ Settings saved! You can now sync Telegram videos.');
+            closeSettingsModal();
+        }
     </script>
 </body>
 </html>

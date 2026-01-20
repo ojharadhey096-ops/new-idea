@@ -57,6 +57,9 @@
                     <button class="btn-secondary" onclick="openRenameModal('{{ folder_name }}')" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fas fa-edit"></i> Rename
                     </button>
+                    <button class="btn-secondary" onclick="deleteFolder('{{ folder_name }}')" style="padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 0, 0, 0.2); border-color: #ff0000; color: #ff0000;">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
                 </div>
             </section>
 
@@ -235,6 +238,36 @@
             setTimeout(() => notification.remove(), 2000);
         }
 
+        async function deleteFolder(folderName) {
+            if (!confirm(`⚠️ Are you sure you want to delete "${folderName}" folder?\n\nAll videos in this folder will be removed from the database (files won't be deleted).`)) {
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('folder_name', folderName);
+
+                const response = await fetch('/api/delete_folder', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if(response.ok) {
+                    showNotification('✓ Folder deleted successfully!');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to delete folder'));
+                }
+            } catch(error) {
+                console.error('Error:', error);
+                alert('Error deleting folder: ' + error.message);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             loadFolders();
             setupSearch();
@@ -274,6 +307,145 @@
                 });
             });
         }
+
+        // Subfolder and video management functions
+        function openCreateSubfolderModal() {
+            document.getElementById('createSubfolderModal').classList.add('active');
+            document.getElementById('subfolderName').focus();
+        }
+
+        function closeCreateSubfolderModal() {
+            document.getElementById('createSubfolderModal').classList.remove('active');
+        }
+
+        function openAddVideoModal() {
+            document.getElementById('addVideoModal').classList.add('active');
+            document.getElementById('videoUrl').focus();
+        }
+
+        function closeAddVideoModal() {
+            document.getElementById('addVideoModal').classList.remove('active');
+        }
+
+        async function submitCreateSubfolder(event) {
+            event.preventDefault();
+
+            const subfolderName = document.getElementById('subfolderName').value.trim();
+            if (!subfolderName) {
+                alert('Please enter a subfolder name');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('parent_path', '{{ folder_path }}');
+                formData.append('subfolder_name', subfolderName);
+
+                const response = await fetch('/api/create_subfolder', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showNotification('✓ Subfolder created successfully!');
+                    closeCreateSubfolderModal();
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    alert('Error: ' + (data.detail || 'Failed to create subfolder'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error creating subfolder: ' + error.message);
+            }
+        }
+
+        async function submitAddVideoToFolder(event) {
+            event.preventDefault();
+
+            const videoUrl = document.getElementById('videoUrl').value.trim();
+            if (!videoUrl) {
+                alert('Please enter a YouTube URL');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('url', videoUrl);
+                formData.append('folder_path', '{{ folder_path }}');
+
+                const response = await fetch('/add_video', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showNotification('✓ Video added successfully! Processing in background...');
+                    closeAddVideoModal();
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to add video'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error adding video: ' + error.message);
+            }
+        }
     </script>
+
+    <!-- Create Subfolder Modal -->
+    <div class="modal" id="createSubfolderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Subfolder in {{ folder_name }}</h3>
+                <button class="modal-close" onclick="closeCreateSubfolderModal()">×</button>
+            </div>
+            <form onsubmit="submitCreateSubfolder(event)">
+                <div class="form-group">
+                    <label>Subfolder name:</label>
+                    <input type="text" id="subfolderName" placeholder="Enter subfolder name" required autofocus>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button type="submit" class="btn-primary" style="flex: 1;">
+                        <i class="fas fa-check"></i> Create
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="closeCreateSubfolderModal()" style="flex: 1;">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Video Modal -->
+    <div class="modal" id="addVideoModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Video to {{ folder_name }}</h3>
+                <button class="modal-close" onclick="closeAddVideoModal()">×</button>
+            </div>
+            <form onsubmit="submitAddVideoToFolder(event)">
+                <div class="form-group">
+                    <label>YouTube URL:</label>
+                    <input type="url" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." required>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button type="submit" class="btn-primary" style="flex: 1;">
+                        <i class="fas fa-plus-circle"></i> Add Video
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="closeAddVideoModal()" style="flex: 1;">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
