@@ -1,1 +1,15 @@
-{}
+{
+  "1_V4MopPwS4": {
+    "video_id": "1_V4MopPwS4",
+    "title": "YouTube Video 1_V4MopPwS4",
+    "source_url": "https://www.youtube.com/live/1_V4MopPwS4?si=rI1Kd5wujknnEi9_",
+    "folder_path": "dd",
+    "folder_name": "dd",
+    "embed_url": "https://www.youtube.com/embed/1_V4MopPwS4",
+    "thumbnail_path": "static/thumbnails/1_V4MopPwS4.jpg",
+    "duration": 0,
+    "file_size": 0,
+    "added_time": "2026-01-20T15:58:53.834236",
+    "views_count": 4
+  }
+}
