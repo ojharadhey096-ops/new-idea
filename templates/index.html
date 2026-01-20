@@ -18,15 +18,29 @@
             <input type="text" id="searchInput" placeholder="Search videos...">
         </div>
         <div class="header-actions">
+            {% if current_user %}
+            {% if current_user.role == "admin" %}
+            <span class="admin-badge" style="background: linear-gradient(45deg, #ff6b6b, #ee5a24); color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-right: 1rem;">
+                👑 ADMIN
+            </span>
+            <button class="btn-icon" title="Admin Panel" onclick="openAdminPanel()" style="background: rgba(255, 107, 107, 0.2); color: #ff6b6b;">
+                <i class="fas fa-cog"></i>
+            </button>
+            {% endif %}
+            <span style="color: var(--text-primary); margin-right: 1rem;">
+                Welcome, <strong>{{ current_user.username }}</strong>
+            </span>
             <button class="btn-icon" title="Add Video" onclick="openAddVideoModal()">
                 <i class="fas fa-plus"></i>
             </button>
-            <button class="btn-icon" title="Settings" onclick="openSettingsModal()">
-                <i class="fas fa-cog"></i>
+            <button class="btn-icon" title="Logout" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
             </button>
-            <button class="btn-icon" title="Profile">
-                <i class="fas fa-user-circle"></i>
-            </button>
+            {% else %}
+            <a href="/login" class="btn-icon" title="Login">
+                <i class="fas fa-sign-in-alt"></i>
+            </a>
+            {% endif %}
         </div>
     </header>
 
@@ -425,16 +439,28 @@
         function saveSettings() {
             const apiId = document.getElementById('apiIdInput').value.trim();
             const apiHash = document.getElementById('apiHashInput').value.trim();
-            
+
             if (!apiId || !apiHash) {
                 alert('❌ Please enter both API ID and API Hash');
                 return;
             }
-            
+
             localStorage.setItem('apiId', apiId);
             localStorage.setItem('apiHash', apiHash);
             alert('✅ Settings saved! You can now sync Telegram videos.');
             closeSettingsModal();
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                fetch('/logout', { method: 'POST' })
+                    .then(() => window.location.href = '/login')
+                    .catch(() => window.location.href = '/login');
+            }
+        }
+
+        function openAdminPanel() {
+            window.location.href = '/admin';
         }
     </script>
 </body>

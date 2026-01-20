@@ -3,44 +3,473 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <title>Admin Panel - VideoHub</title>
+    <link rel="stylesheet" href="/static/css/youtube.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .admin-header {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(238, 90, 36, 0.1));
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .admin-header h1 {
+            color: #ff6b6b;
+            margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+        }
+
+        .admin-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .admin-nav button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: var(--secondary-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .admin-nav button.active {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .admin-nav button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .admin-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .admin-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff6b6b;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .users-table th {
+            background: var(--secondary-color);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .status-active {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .status-inactive {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .role-admin {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .role-user {
+            background: rgba(0, 123, 255, 0.2);
+            color: #007bff;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .action-btn {
+            padding: 0.25rem 0.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+
+        .btn-ban {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-activate {
+            background: #28a745;
+            color: white;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--secondary-color);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 1000;
+        }
+
+        .back-btn:hover {
+            background: var(--border-color);
+        }
+
+        @media (max-width: 768px) {
+            .admin-nav {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .users-table {
+                font-size: 0.8rem;
+            }
+
+            .admin-container {
+                padding: 1rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    {% if dashboard %}
-    <header>
-        <h1>Study Portal Admin Dashboard</h1>
-        <p>Manage your video library</p>
-        <button onclick="syncVideos()">Sync Videos</button>
-    </header>
-    <main>
-        <section>
-            <h2>All Videos</h2>
-            {% for video in videos %}
-            <div class="admin-video-item">
-                <h3>{{ video.title }}</h3>
-                <form method="post" action="/admin/update_video">
-                    <input type="hidden" name="video_id" value="{{ video.unique_video_id }}">
-                    <label>Title: <input type="text" name="title" value="{{ video.title }}"></label>
-                    <label>Description: <textarea name="description">{{ video.description }}</textarea></label>
-                    <label>Category: <input type="text" name="category" value="{{ video.category }}"></label>
-                    <button type="submit">Update</button>
-                </form>
+    <button class="back-btn" onclick="window.location.href='/'">
+        <i class="fas fa-arrow-left"></i> Back to VideoHub
+    </button>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1><i class="fas fa-crown"></i> Admin Panel</h1>
+            <p>Complete system administration and user management</p>
+        </div>
+
+        <div class="admin-nav">
+            <button onclick="showSection('dashboard')" class="active" id="btn-dashboard">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </button>
+            <button onclick="showSection('users')" id="btn-users">
+                <i class="fas fa-users"></i> User Management
+            </button>
+            <button onclick="showSection('content')" id="btn-content">
+                <i class="fas fa-video"></i> Content Moderation
+            </button>
+            <button onclick="showSection('logs')" id="btn-logs">
+                <i class="fas fa-history"></i> Activity Logs
+            </button>
+            <button onclick="showSection('settings')" id="btn-settings">
+                <i class="fas fa-cog"></i> System Settings
+            </button>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="admin-section">
+            <h2><i class="fas fa-chart-line"></i> System Dashboard</h2>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-users">0</div>
+                    <div class="stat-label">Total Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="active-users">0</div>
+                    <div class="stat-label">Active Users</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-videos">0</div>
+                    <div class="stat-label">Total Videos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-views">0</div>
+                    <div class="stat-label">Total Views</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="storage-used">0 MB</div>
+                    <div class="stat-label">Storage Used</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-folders">0</div>
+                    <div class="stat-label">Total Folders</div>
+                </div>
             </div>
-            {% endfor %}
-        </section>
-    </main>
-    {% else %}
-    <main>
-        <section>
-            <h1>Admin Login</h1>
-            <form method="post" action="/admin/login">
-                <label>Password: <input type="password" name="password" required></label>
-                <button type="submit">Login</button>
-            </form>
-        </section>
-    </main>
-    {% endif %}
-    <script src="/static/js/admin.js"></script>
+
+            <h3>Recent Activity</h3>
+            <div id="recent-activity">
+                <p>Loading recent activity...</p>
+            </div>
+        </div>
+
+        <!-- User Management Section -->
+        <div id="users-section" class="admin-section" style="display: none;">
+            <h2><i class="fas fa-users"></i> User Management</h2>
+
+            <div style="margin-bottom: 1rem;">
+                <input type="text" id="user-search" placeholder="Search users..." style="padding: 0.5rem; width: 300px; border: 1px solid var(--border-color); border-radius: 4px;">
+            </div>
+
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Joined</th>
+                        <th>Last Login</th>
+                        <th>Login Count</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body">
+                    <tr>
+                        <td colspan="8">Loading users...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Content Moderation Section -->
+        <div id="content-section" class="admin-section" style="display: none;">
+            <h2><i class="fas fa-video"></i> Content Moderation</h2>
+            <p>Monitor and moderate user-generated content</p>
+            <div id="content-moderation">
+                <p>Content moderation features coming soon...</p>
+            </div>
+        </div>
+
+        <!-- Activity Logs Section -->
+        <div id="logs-section" class="admin-section" style="display: none;">
+            <h2><i class="fas fa-history"></i> Activity Logs</h2>
+            <p>System activity and user actions</p>
+            <div id="activity-logs">
+                <p>Activity logging features coming soon...</p>
+            </div>
+        </div>
+
+        <!-- System Settings Section -->
+        <div id="settings-section" class="admin-section" style="display: none;">
+            <h2><i class="fas fa-cog"></i> System Settings</h2>
+            <p>Configure system-wide settings</p>
+            <div id="system-settings">
+                <p>System settings features coming soon...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSection = 'dashboard';
+
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.admin-section').forEach(section => {
+                section.style.display = 'none';
+            });
+
+            // Remove active class from all buttons
+            document.querySelectorAll('.admin-nav button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected section
+            document.getElementById(sectionName + '-section').style.display = 'block';
+            document.getElementById('btn-' + sectionName).classList.add('active');
+
+            currentSection = sectionName;
+
+            // Load data for the section
+            loadSectionData(sectionName);
+        }
+
+        async function loadSectionData(section) {
+            try {
+                if (section === 'dashboard') {
+                    await loadDashboardStats();
+                } else if (section === 'users') {
+                    await loadUsers();
+                }
+            } catch (error) {
+                console.error('Error loading section data:', error);
+            }
+        }
+
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch('/api/admin/stats');
+                const stats = await response.json();
+
+                document.getElementById('total-users').textContent = stats.total_users || 0;
+                document.getElementById('active-users').textContent = stats.active_users || 0;
+                document.getElementById('total-videos').textContent = stats.total_videos || 0;
+                document.getElementById('total-views').textContent = stats.total_views || 0;
+                document.getElementById('storage-used').textContent = (stats.storage_used || 0) + ' MB';
+                document.getElementById('total-folders').textContent = stats.total_folders || 0;
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users');
+                const data = await response.json();
+                const users = data.users || [];
+
+                const tbody = document.getElementById('users-table-body');
+                tbody.innerHTML = users.map(user => `
+                    <tr>
+                        <td>${user.username}</td>
+                        <td>${user.email}</td>
+                        <td><span class="role-${user.role}">${user.role}</span></td>
+                        <td><span class="status-${user.is_active ? 'active' : 'inactive'}">${user.is_active ? 'Active' : 'Inactive'}</span></td>
+                        <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                        <td>${user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</td>
+                        <td>${user.login_count || 0}</td>
+                        <td>
+                            ${user.username !== 'admin' ? `
+                                <button class="action-btn btn-${user.is_active ? 'ban' : 'activate'}" onclick="toggleUserStatus('${user.username}')">
+                                    ${user.is_active ? 'Ban' : 'Activate'}
+                                </button>
+                                <button class="action-btn btn-delete" onclick="deleteUser('${user.username}')">
+                                    Delete
+                                </button>
+                            ` : '<span style="color: var(--text-secondary);">Admin</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('users-table-body').innerHTML = '<tr><td colspan="8">Error loading users</td></tr>';
+            }
+        }
+
+        async function toggleUserStatus(username) {
+            if (!confirm(`Are you sure you want to change ${username}'s status?`)) return;
+
+            try {
+                const response = await fetch(`/api/admin/users/${username}/toggle`, { method: 'POST' });
+                if (response.ok) {
+                    loadUsers(); // Reload users list
+                    alert('User status updated successfully');
+                } else {
+                    alert('Error updating user status');
+                }
+            } catch (error) {
+                console.error('Error toggling user status:', error);
+                alert('Error updating user status');
+            }
+        }
+
+        async function deleteUser(username) {
+            if (!confirm(`Are you sure you want to permanently delete user ${username}? This action cannot be undone!`)) return;
+
+            try {
+                const response = await fetch(`/api/admin/users/${username}/delete`, { method: 'DELETE' });
+                if (response.ok) {
+                    loadUsers(); // Reload users list
+                    alert('User deleted successfully');
+                } else {
+                    alert('Error deleting user');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                alert('Error deleting user');
+            }
+        }
+
+        // Search functionality
+        document.getElementById('user-search').addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#users-table-body tr');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSectionData('dashboard');
+        });
+    </script>
 </body>
 </html>

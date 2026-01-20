@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Request, HTTPException, Form, BackgroundTasks, File, UploadFile
+from fastapi import FastAPI, Request, HTTPException, Form, BackgroundTasks, File, UploadFile, Response, Cookie
+from starlette.responses import RedirectResponse
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -9,6 +10,7 @@ import os
 from datetime import datetime
 import aiofiles
 import shutil
+from auth import get_current_user, authenticate_user, register_user
 import asyncio
 try:
     from telegram_client import fetch_videos_from_channel
@@ -23,6 +25,69 @@ templates = Jinja2Templates(directory="templates")
 
 VIDEO_DB = "video_db.json"
 FOLDER_DB = "folder_db.json"
+
+# Authentication routes
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request, error: str = None):
+    return templates.TemplateResponse("login.html", {"request": request, "error": error})
+
+@app.post("/login")
+async def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    user = authenticate_user(username, password)
+    if not user:
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "Invalid username or password"
+        })
+
+    from auth import create_access_token
+    token = create_access_token({"sub": username})
+
+    # Redirect admin users to admin panel, others to home
+    redirect_url = "/admin" if user.get("role") == "admin" else "/"
+    response = RedirectResponse(redirect_url, status_code=302)
+    response.set_cookie(key="auth_token", value=token, httponly=True, max_age=6*30*24*60*60)
+    return response
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request, error: str = None, success: str = None):
+    return templates.TemplateResponse("register.html", {
+        "request": request,
+        "error": error,
+        "success": success
+    })
+
+@app.post("/register")
+async def register(
+    request: Request,
+    username: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...)
+):
+    if password != confirm_password:
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": "Passwords do not match"
+        })
+
+    try:
+        user = register_user(username, email, password)
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "success": "Account created successfully! You can now login."
+        })
+    except HTTPException as e:
+        return templates.TemplateResponse("register.html", {
+            "request": request,
+            "error": e.detail
+        })
+
+@app.post("/logout")
+async def logout(response: Response):
+    response = RedirectResponse("/login", status_code=302)
+    response.delete_cookie("auth_token")
+    return response
 
 def load_db():
     try:
@@ -81,31 +146,113 @@ def build_folder_hierarchy():
 
     return hierarchy
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    db = load_db()
-    folder_hierarchy = build_folder_hierarchy()
-    all_videos = list(db.values())
-    # Sort videos by added time (newest first)
-    all_videos.sort(key=lambda x: x.get('added_time', ''), reverse=True)
-    return templates.TemplateResponse("index.html", {"request": request, "folder_hierarchy": folder_hierarchy, "videos": all_videos})
-
-@app.get("/folder/{folder_path:path}", response_class=HTMLResponse)
-async def folder_page(request: Request, folder_path: str):
+def build_user_folder_hierarchy(username):
+    """Build folder hierarchy for a specific user"""
     db = load_db()
     folder_db = load_folder_db()
 
-    # Find videos in this folder and subfolders
+    # Get user's folder paths
+    folders = {}
+    for video in db.values():
+        if video.get('user_id') == username:
+            folder_path = video.get('folder_path', video.get('folder_name', ''))
+            if folder_path:
+                folders[folder_path] = folders.get(folder_path, 0) + 1
+
+    # Add user's folders from folder_db
+    for folder_name, folder_info in folder_db.items():
+        if folder_info.get('user_id') == username:
+            if folder_name not in folders:
+                folders[folder_name] = 0
+
+    # Build hierarchy
+    hierarchy = {}
+    for folder_path, count in folders.items():
+        parts = folder_path.split('/')
+        current = hierarchy
+        for part in parts:
+            if part not in current:
+                current[part] = {'count': 0, 'subfolders': {}}
+            current = current[part]['subfolders']
+        # Set count on the deepest level
+        if parts:
+            current = hierarchy
+            for part in parts[:-1]:
+                current = current[part]['subfolders']
+            current[parts[-1]]['count'] = count
+
+    return hierarchy
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request, auth_token: str = Cookie(None)):
+    # Check if user is authenticated
+    if not auth_token:
+        return RedirectResponse("/login", status_code=302)
+
+    try:
+        from auth import verify_token
+        username = verify_token(auth_token)
+        if not username:
+            return RedirectResponse("/login", status_code=302)
+
+        from auth import load_users
+        users = load_users()
+        if username not in users:
+            return RedirectResponse("/login", status_code=302)
+
+        user = users[username]
+    except Exception:
+        return RedirectResponse("/login", status_code=302)
+
+    db = load_db()
+
+    # Filter videos by current user
+    user_videos = [video for video in db.values() if video.get('user_id') == user['username']]
+    user_videos.sort(key=lambda x: x.get('added_time', ''), reverse=True)
+
+    # Build user-specific folder hierarchy
+    folder_hierarchy = build_user_folder_hierarchy(user['username'])
+
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "folder_hierarchy": folder_hierarchy,
+        "videos": user_videos,
+        "current_user": user
+    })
+
+@app.get("/folder/{folder_path:path}", response_class=HTMLResponse)
+async def folder_page(request: Request, folder_path: str, auth_token: str = Cookie(None)):
+    # Check authentication
+    if not auth_token:
+        return RedirectResponse("/login", status_code=302)
+
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            return RedirectResponse("/login", status_code=302)
+        user = users[username]
+    except Exception:
+        return RedirectResponse("/login", status_code=302)
+
+    db = load_db()
+    folder_db = load_folder_db()
+
+    # Find user's videos in this folder and subfolders
     videos = []
     for video in db.values():
-        video_folder = video.get('folder_path', video.get('folder_name', ''))
-        if video_folder == folder_path or video_folder.startswith(folder_path + '/'):
-            videos.append(video)
+        if video.get('user_id') == username:
+            video_folder = video.get('folder_path', video.get('folder_name', ''))
+            if video_folder == folder_path or video_folder.startswith(folder_path + '/'):
+                videos.append(video)
 
-    # Get subfolders
+    # Get user's subfolders
     subfolders = {}
-    for folder_name in folder_db:
-        if folder_name.startswith(folder_path + '/') and folder_name.count('/') == folder_path.count('/') + 1:
+    for folder_name, folder_info in folder_db.items():
+        if (folder_info.get('user_id') == username and
+            folder_name.startswith(folder_path + '/') and
+            folder_name.count('/') == folder_path.count('/') + 1):
             subfolder_name = folder_name.split('/')[-1]
             subfolders[subfolder_name] = folder_name
 
@@ -114,32 +261,86 @@ async def folder_page(request: Request, folder_path: str):
         "folder_path": folder_path,
         "folder_name": folder_path.split('/')[-1],
         "videos": videos,
-        "subfolders": subfolders
+        "subfolders": subfolders,
+        "current_user": user
     })
 
 @app.get("/watch/{video_id}", response_class=HTMLResponse)
-async def watch(request: Request, video_id: str):
+async def watch(request: Request, video_id: str, auth_token: str = Cookie(None)):
+    # Check authentication
+    if not auth_token:
+        return RedirectResponse("/login", status_code=302)
+
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            return RedirectResponse("/login", status_code=302)
+        user = users[username]
+    except Exception:
+        return RedirectResponse("/login", status_code=302)
+
     db = load_db()
     video = db.get(video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
+
+    # Check if video belongs to user
+    if video.get('user_id') != username:
+        raise HTTPException(status_code=403, detail="Access denied")
+
     # Increment views
     video['views_count'] = video.get('views_count', 0) + 1
     save_db(db)
-    return templates.TemplateResponse("watch.html", {"request": request, "video": video})
+    return templates.TemplateResponse("watch.html", {"request": request, "video": video, "current_user": user})
 
 @app.post("/add_video")
-async def add_video(background_tasks: BackgroundTasks, url: str = Form(...), folder_path: str = Form(None), new_folder: str = Form(None)):
+async def add_video(
+    background_tasks: BackgroundTasks,
+    url: str = Form(...),
+    folder_path: str = Form(None),
+    new_folder: str = Form(None),
+    auth_token: str = Cookie(None)
+):
+    # Verify user authentication
+    if not auth_token:
+        return {"error": "Authentication required"}, 401
+
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            return {"error": "User not found"}, 401
+        user = users[username]
+    except Exception:
+        return {"error": "Invalid authentication"}, 401
+
     # Use new_folder if provided, otherwise use folder_path
     actual_folder = new_folder if new_folder else folder_path
     if not actual_folder:
         return {"error": "Folder path is required"}, 400
-    background_tasks.add_task(process_video, url, actual_folder)
+
+    background_tasks.add_task(process_video, url, actual_folder, username)
     return {"message": "Video processing started"}
 
 @app.get("/api/folders")
-async def get_folders():
-    folder_hierarchy = build_folder_hierarchy()
+async def get_folders(auth_token: str = Cookie(None)):
+    # Check authentication
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            raise HTTPException(status_code=401, detail="User not found")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
+    folder_hierarchy = build_user_folder_hierarchy(username)
 
     # Flatten hierarchy for backward compatibility
     def flatten_hierarchy(hierarchy, prefix=""):
@@ -161,12 +362,28 @@ async def get_folders():
     return {"folders": folders}
 
 @app.get("/api/stream/{video_id}")
-async def get_stream(video_id: str):
+async def get_stream(video_id: str, auth_token: str = Cookie(None)):
     """Get streaming URL for a video"""
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            raise HTTPException(status_code=401, detail="User not found")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
     db = load_db()
     video = db.get(video_id)
     if not video:
         raise HTTPException(status_code=404, detail="Video not found")
+
+    # Check if video belongs to user
+    if video.get('user_id') != username:
+        raise HTTPException(status_code=403, detail="Access denied")
     
     try:
         # Extract stream URL using yt-dlp
@@ -234,22 +451,44 @@ async def get_stream(video_id: str):
 
 
 @app.post("/api/rename_folder")
-async def rename_folder(old_name: str = Form(...), new_name: str = Form(...)):
+async def rename_folder(old_name: str = Form(...), new_name: str = Form(...), auth_token: str = Cookie(None)):
     """Rename a folder and update all videos in it"""
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            raise HTTPException(status_code=401, detail="User not found")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
     db = load_db()
-    
-    # Update all videos with the old folder name
+    folder_db = load_folder_db()
+
+    # Update all user's videos with the old folder name
     for video in db.values():
-        if video['folder_name'] == old_name:
+        if video.get('user_id') == username and video.get('folder_name') == old_name:
             video['folder_name'] = new_name
-    
+
+    # Update folder in folder_db if it belongs to user
+    if old_name in folder_db and folder_db[old_name].get('user_id') == username:
+        folder_info = folder_db[old_name]
+        folder_info['name'] = new_name
+        folder_info['path'] = new_name
+        folder_db[new_name] = folder_info
+        del folder_db[old_name]
+        save_folder_db(folder_db)
+
     # Rename physical folder
-    old_path = os.path.join("videos", old_name)
-    new_path = os.path.join("videos", new_name)
-    
+    old_path = os.path.join("videos", username, old_name)
+    new_path = os.path.join("videos", username, new_name)
+
     if os.path.exists(old_path):
         os.rename(old_path, new_path)
-    
+
     save_db(db)
     return {"message": f"Folder renamed from {old_name} to {new_name}"}
 
@@ -326,7 +565,7 @@ async def fetch_and_store_telegram_videos(channel: str):
     except Exception as e:
         print(f"Error syncing Telegram channel: {e}")
 
-async def process_video(url: str, folder_name: str):
+async def process_video(url: str, folder_name: str, username: str = None):
     try:
         # Extract video_id from URL - YouTube IDs are exactly 11 alphanumeric/dash characters
         import re
@@ -368,7 +607,10 @@ async def process_video(url: str, folder_name: str):
             return
 
         # Create folder if it doesn't exist
-        folder_path = os.path.join("videos", folder_name)
+        if username:
+            folder_path = os.path.join("videos", username, folder_name)
+        else:
+            folder_path = os.path.join("videos", folder_name)
         os.makedirs(folder_path, exist_ok=True)
 
         # Use embed URL for YouTube
@@ -393,6 +635,7 @@ async def process_video(url: str, folder_name: str):
         # Save to db
         db[video_id] = {
             'video_id': video_id,
+            'user_id': username,  # Associate with user
             'title': title,
             'source_url': url,
             'folder_path': folder_name,  # Changed from folder_name to folder_path
@@ -410,20 +653,39 @@ async def process_video(url: str, folder_name: str):
         print(f"Error processing video: {e}")
 
 @app.post("/api/delete_folder")
-async def delete_folder(folder_name: str = Form(...)):
+async def delete_folder(folder_name: str = Form(...), auth_token: str = Cookie(None)):
     """Delete a folder and all its videos from the database and filesystem"""
-    db = load_db()
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
 
-    # Remove all videos in the folder
-    videos_to_delete = [video_id for video_id, video in db.items() if video['folder_name'] == folder_name]
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            raise HTTPException(status_code=401, detail="User not found")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
+    db = load_db()
+    folder_db = load_folder_db()
+
+    # Remove all user's videos in the folder
+    videos_to_delete = [video_id for video_id, video in db.items()
+                       if video.get('user_id') == username and video.get('folder_name') == folder_name]
 
     for video_id in videos_to_delete:
         del db[video_id]
 
+    # Remove folder from folder_db if it belongs to user
+    if folder_name in folder_db and folder_db[folder_name].get('user_id') == username:
+        del folder_db[folder_name]
+        save_folder_db(folder_db)
+
     save_db(db)
 
     # Delete physical folder if it exists and is empty
-    folder_path = os.path.join("videos", folder_name)
+    folder_path = os.path.join("videos", username, folder_name)
     try:
         if os.path.exists(folder_path):
             # Check if folder is empty or only contains .gitkeep or similar
@@ -438,9 +700,213 @@ async def delete_folder(folder_name: str = Form(...)):
 
     return {"message": f"Folder '{folder_name}' and all its videos deleted successfully"}
 
+# Admin routes
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_panel(request: Request, auth_token: str = Cookie(None)):
+    # Check if user is authenticated and is admin
+    if not auth_token:
+        return RedirectResponse("/login", status_code=302)
+
+    try:
+        from auth import verify_token
+        username = verify_token(auth_token)
+        if not username:
+            return RedirectResponse("/login", status_code=302)
+
+        from auth import load_users
+        users = load_users()
+        if username not in users:
+            return RedirectResponse("/login", status_code=302)
+
+        user = users[username]
+        if user.get("role") != "admin":
+            return RedirectResponse("/", status_code=302)  # Not admin, redirect to home
+
+    except Exception:
+        return RedirectResponse("/login", status_code=302)
+
+    return templates.TemplateResponse("admin.html", {"request": request, "current_user": user})
+
+@app.get("/api/admin/stats")
+async def get_admin_stats(auth_token: str = Cookie(None)):
+    # Verify admin access
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+
+        if not user or user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
+    # Calculate statistics
+    all_users = load_users()
+    db = load_db()
+
+    total_users = len(all_users)
+    active_users = sum(1 for u in all_users.values() if u.get("is_active", True))
+    total_videos = len(db)
+    total_views = sum(video.get("views_count", 0) for video in db.values())
+
+    # Calculate storage used (rough estimate)
+    storage_used = 0
+    for video in db.values():
+        thumbnail_path = video.get("thumbnail_path", "")
+        if thumbnail_path and os.path.exists(thumbnail_path):
+            try:
+                storage_used += os.path.getsize(thumbnail_path)
+            except:
+                pass
+
+    # Convert to MB
+    storage_used_mb = round(storage_used / (1024 * 1024), 2)
+
+    # Count folders
+    folder_db = load_folder_db()
+    total_folders = len(folder_db)
+
+    return {
+        "total_users": total_users,
+        "active_users": active_users,
+        "total_videos": total_videos,
+        "total_views": total_views,
+        "storage_used": storage_used_mb,
+        "total_folders": total_folders
+    }
+
+@app.get("/api/admin/users")
+async def get_all_users(auth_token: str = Cookie(None)):
+    # Verify admin access
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+
+        if not user or user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
+    # Return all users (exclude passwords)
+    all_users = load_users()
+    user_list = []
+    for username, user_data in all_users.items():
+        user_list.append({
+            "username": username,
+            "email": user_data.get("email"),
+            "role": user_data.get("role", "user"),
+            "is_active": user_data.get("is_active", True),
+            "created_at": user_data.get("created_at"),
+            "last_login": user_data.get("last_login"),
+            "login_count": user_data.get("login_count", 0)
+        })
+
+    return {"users": user_list}
+
+@app.post("/api/admin/users/{target_username}/toggle")
+async def toggle_user_status(target_username: str, auth_token: str = Cookie(None)):
+    # Verify admin access
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        from auth import verify_token, load_users, save_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+
+        if not user or user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+        if target_username not in users:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if target_username == "admin":
+            raise HTTPException(status_code=400, detail="Cannot modify admin user")
+
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
+    # Toggle user status
+    users[target_username]["is_active"] = not users[target_username].get("is_active", True)
+    save_users(users)
+
+    return {"message": f"User {target_username} status updated"}
+
+@app.delete("/api/admin/users/{target_username}/delete")
+async def delete_user(target_username: str, auth_token: str = Cookie(None)):
+    # Verify admin access
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        from auth import verify_token, load_users, save_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+
+        if not user or user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+        if target_username not in users:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if target_username == "admin":
+            raise HTTPException(status_code=400, detail="Cannot delete admin user")
+
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
+    # Delete user and all their data
+    db = load_db()
+    folder_db = load_folder_db()
+
+    # Remove user's videos
+    videos_to_delete = [vid for vid, video in db.items() if video.get("user_id") == target_username]
+    for vid in videos_to_delete:
+        del db[vid]
+
+    # Remove user's folders
+    folders_to_delete = [fid for fid, folder in folder_db.items() if folder.get("user_id") == target_username]
+    for fid in folders_to_delete:
+        del folder_db[fid]
+
+    # Remove user account
+    del users[target_username]
+
+    # Save changes
+    save_db(db)
+    save_folder_db(folder_db)
+    save_users(users)
+
+    return {"message": f"User {target_username} and all their data deleted"}
+
 @app.post("/api/create_subfolder")
-async def create_subfolder(parent_path: str = Form(...), subfolder_name: str = Form(...)):
+async def create_subfolder(parent_path: str = Form(...), subfolder_name: str = Form(...), auth_token: str = Cookie(None)):
     """Create a new subfolder"""
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            raise HTTPException(status_code=401, detail="User not found")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
     if not subfolder_name or not subfolder_name.strip():
         raise HTTPException(status_code=400, detail="Subfolder name is required")
 
@@ -451,7 +917,7 @@ async def create_subfolder(parent_path: str = Form(...), subfolder_name: str = F
         raise HTTPException(status_code=400, detail="Folder already exists")
 
     # Create physical folder
-    folder_physical_path = os.path.join("videos", new_folder_path)
+    folder_physical_path = os.path.join("videos", username, new_folder_path)
     os.makedirs(folder_physical_path, exist_ok=True)
 
     # Save to folder database
@@ -459,6 +925,7 @@ async def create_subfolder(parent_path: str = Form(...), subfolder_name: str = F
         'name': subfolder_name.strip(),
         'path': new_folder_path,
         'parent_path': parent_path,
+        'user_id': username,
         'created_time': datetime.now().isoformat()
     }
     save_folder_db(folder_db)
