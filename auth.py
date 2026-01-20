@@ -1,6 +1,6 @@
 import json
 import bcrypt
-import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import HTTPException, Depends, Cookie
@@ -53,7 +53,7 @@ def verify_token(token: str) -> Optional[str]:
         if username is None:
             return None
         return username
-    except jwt.PyJWTError:
+    except JWTError:
         return None
 
 def authenticate_user(username: str, password: str):
