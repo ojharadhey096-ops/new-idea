@@ -1,9 +1,9 @@
 import os
 from typing import List
 
-# Telegram API credentials
-API_ID = int(os.environ.get("API_ID", "26704085"))
-API_HASH = os.environ.get("API_HASH", "f150646c78f09b4f88bef191a22539c0")
+# Telegram API credentials (set via environment variables)
+API_ID = int(os.environ.get("API_ID", ""))
+API_HASH = os.environ.get("API_HASH", "")
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")  # Optional, for bot if needed
 
 # Channels/Groups to monitor (comma-separated in env)

@@ -87,7 +87,7 @@ def register_user(username: str, email: str, password: str):
         "email": email,
         "password_hash": hashed_password,
         "created_at": datetime.now().isoformat(),
-        "is_active": True,
+        "is_active": False,  # Require admin approval before login
         "role": "user",
         "last_login": None,
         "login_count": 0

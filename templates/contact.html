@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact • VideoHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root{ --bg:#0b0f1a; --bg-2:#0d1220; --text:#eaf0ff; --muted:#98a3c7; --accent:#00e6ff; --primary:#7c5cff; --border:rgba(255,255,255,0.15);} *{box-sizing:border-box}
+    body{margin:0;font-family:'Poppins',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial,'Noto Sans',sans-serif;color:var(--text);
+      background: radial-gradient(1200px 800px at 10% -10%, #1a1f35 0%, transparent 60%), radial-gradient(1000px 900px at 110% 10%, #11192b 0%, transparent 60%), linear-gradient(0deg, var(--bg), var(--bg-2));}
+    .nav{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid rgba(255,255,255,0.08)}
+    .brand{display:flex;gap:10px;align-items:center;font-weight:800}
+    .brand i{color:var(--primary)}
+    .links a{color:var(--muted);text-decoration:none;margin:0 10px;font-weight:600}
+    .container{max-width:900px;margin:0 auto;padding:36px 22px}
+    h1{margin:0 0 8px}
+    p{color:var(--muted)}
+    form{margin-top:16px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:14px;padding:16px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{font-weight:600;font-size:0.95rem}
+    input,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.06);color:var(--text)}
+    textarea{min-height:140px;resize:vertical}
+    .actions{display:flex;gap:10px;margin-top:12px}
+    .btn{padding:10px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);cursor:pointer;font-weight:700}
+    .btn-primary{background:linear-gradient(135deg,var(--accent),var(--primary));color:#0b0f1a}
+    .btn-ghost{background:linear-gradient(180deg,rgba(0,230,255,0.12),rgba(0,230,255,0.05));color:var(--accent);border-color:rgba(0,230,255,0.35)}
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <div class="brand"><i class="fas fa-play-circle"></i> VideoHub</div>
+    <div class="links"><a href="/welcome">Home</a> <a href="/about">About</a></div>
+  </div>
+
+  <div class="container">
+    <h1>Contact</h1>
+    <p>Send us a message. This form is a placeholder and does not send emails.</p>
+    <form onsubmit="event.preventDefault(); alert('Thanks! This demo form does not send.');">
+      <div class="row">
+        <div>
+          <label for="name">Name</label>
+          <input type="text" id="name" placeholder="Your name" required>
+        </div>
+        <div>
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="you@example.com" required>
+        </div>
+      </div>
+      <div style="margin-top:12px;">
+        <label for="msg">Message</label>
+        <textarea id="msg" placeholder="How can we help?"></textarea>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" type="submit"><i class="fas fa-paper-plane"></i> Send</button>
+        <a class="btn btn-ghost" href="/welcome"><i class="fas fa-home"></i> Back to Home</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

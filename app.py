@@ -7,7 +7,9 @@ import uvicorn
 import yt_dlp
 import json
 import os
-from datetime import datetime
+import secrets
+import bcrypt
+from datetime import datetime, timedelta
 import aiofiles
 import shutil
 from auth import get_current_user, authenticate_user, register_user
@@ -28,8 +30,278 @@ if os.path.exists("videos"):
 
 templates = Jinja2Templates(directory="templates")
 
+# Public landing page (modern animated)
+@app.get("/welcome", response_class=HTMLResponse)
+async def welcome_page(request: Request):
+    return templates.TemplateResponse("landing.html", {"request": request})
+
+# About page
+@app.get("/about", response_class=HTMLResponse)
+async def about_page(request: Request):
+    return templates.TemplateResponse("about.html", {"request": request})
+
+# Contact page
+@app.get("/contact", response_class=HTMLResponse)
+async def contact_page(request: Request):
+    return templates.TemplateResponse("contact.html", {"request": request})
+
+# Public auth helper routes (aliases) for forgot/reset to avoid 404s
+@app.get("/auth/forgot", response_class=HTMLResponse)
+async def forgot_password_form_auth(request: Request):
+    return templates.TemplateResponse("forgot.html", {"request": request})
+
+@app.post("/auth/forgot", response_class=HTMLResponse)
+async def forgot_password_request_auth(request: Request, username_or_email: str = Form(...)):
+    return await forgot_password_request(request, username_or_email)
+
+@app.get("/auth/reset", response_class=HTMLResponse)
+async def reset_form_auth(request: Request, token: str):
+    return templates.TemplateResponse("reset.html", {"request": request, "token": token})
+
+@app.post("/auth/reset", response_class=HTMLResponse)
+async def reset_password_auth(token: str = Form(...), new_password: str = Form(...), confirm_password: str = Form(...)):
+    return await reset_password(token, new_password, confirm_password)
+
+# ===== Forgot Password Flow =====
+RESET_DB = "reset_tokens.json"
+
+def load_reset_tokens():
+    try:
+        with open(RESET_DB, 'r') as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = {}
+    # prune expired
+    now = datetime.now()
+    changed = False
+    for tok, meta in list(data.items()):
+        try:
+            exp = datetime.fromisoformat(meta.get('expires_at'))
+            if exp < now:
+                del data[tok]
+                changed = True
+        except Exception:
+            del data[tok]
+            changed = True
+    if changed:
+        save_reset_tokens(data)
+    return data
+
+def save_reset_tokens(data):
+    with open(RESET_DB, 'w') as f:
+        json.dump(data, f, indent=2)
+
+# Support trailing slash aliases
+@app.get("/forgot/", response_class=HTMLResponse)
+async def forgot_password_form_alias(request: Request):
+    return await forgot_password_form(request)
+
+@app.get("/forgot", response_class=HTMLResponse)
+async def forgot_password_form(request: Request):
+    html = """
+    <!DOCTYPE html><html><head><meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <title>Forgot Password • VideoHub</title>
+    <link rel='stylesheet' href='/static/css/youtube.css'>
+    <style>.box{max-width:460px;margin:80px auto;padding:1.2rem;border:1px solid var(--border-color);border-radius:10px;background:var(--card-bg);} .h{margin:0 0 .6rem;color:var(--primary-color);} .g{display:grid;gap:.6rem} input{padding:.6rem;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-color);color:var(--text-primary)} .btn{padding:.6rem 1rem;border:none;border-radius:8px;background:var(--primary-color);color:#fff;font-weight:700;cursor:pointer;width:100%} a{color:var(--primary-color);}</style>
+    </head><body>
+      <div class='box'>
+        <h2 class='h'>Forgot password</h2>
+        <p>Enter your username or email. If we find a match, we'll generate a reset link.</p>
+        <form method='post' action='/forgot' class='g'>
+          <input type='text' name='username_or_email' placeholder='Username or email' required>
+          <button class='btn' type='submit'>Generate reset link</button>
+        </form>
+        <p style='margin-top:.6rem'><a href='/login'>&larr; Back to Login</a></p>
+      </div>
+    </body></html>
+    """
+    return HTMLResponse(content=html)
+
+@app.post("/forgot/", response_class=HTMLResponse)
+async def forgot_password_request_alias(request: Request, username_or_email: str = Form(...)):
+    return await forgot_password_request(request, username_or_email)
+
+@app.post("/forgot", response_class=HTMLResponse)
+async def forgot_password_request(request: Request, username_or_email: str = Form(...)):
+    # Find user by username or email
+    from auth import load_users
+    users = load_users()
+    target_username = None
+    for uname, u in users.items():
+        if uname == username_or_email or u.get('email') == username_or_email:
+            target_username = uname
+            break
+
+    # Always respond success to avoid user enumeration
+    link_html = ""
+    if target_username:
+        tokens = load_reset_tokens()
+        token = secrets.token_urlsafe(32)
+        expires_at = (datetime.now() + timedelta(hours=1)).isoformat()
+        tokens[token] = { 'username': target_username, 'created_at': datetime.now().isoformat(), 'expires_at': expires_at }
+        save_reset_tokens(tokens)
+        # Provide link directly (dev/demo). In production you would email this.
+        reset_link = f"/reset?token={token}"
+        link_html = f"<p style='background:rgba(0,230,255,.1);border:1px solid rgba(0,230,255,.35);padding:.6rem;border-radius:8px;'>Reset link (valid 1h): <a href='{reset_link}'>{reset_link}</a></p>"
+
+    html = f"""
+    <!DOCTYPE html><html><head><meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <title>Reset Link Sent • VideoHub</title>
+    <link rel='stylesheet' href='/static/css/youtube.css'>
+    <style>.box{{max-width:460px;margin:80px auto;padding:1.2rem;border:1px solid var(--border-color);border-radius:10px;background:var(--card-bg);}} .h{{margin:0 0 .6rem;color:var(--primary-color);}} a{{color:var(--primary-color);}}</style>
+    </head><body>
+      <div class='box'>
+        <h2 class='h'>If the account exists, a reset link is available below.</h2>
+        {link_html}
+        <p><a href='/login'>&larr; Back to Login</a></p>
+      </div>
+    </body></html>
+    """
+    return HTMLResponse(content=html)
+
+@app.get("/reset/", response_class=HTMLResponse)
+async def reset_form_alias(request: Request, token: str):
+    return await reset_form(request, token)
+
+@app.get("/reset", response_class=HTMLResponse)
+async def reset_form(request: Request, token: str):
+    tokens = load_reset_tokens()
+    meta = tokens.get(token)
+    valid = False
+    if meta:
+        try:
+            valid = datetime.fromisoformat(meta.get('expires_at')) >= datetime.now()
+        except Exception:
+            valid = False
+    if not valid:
+        return HTMLResponse("<div style='max-width:460px;margin:80px auto;font-family:sans-serif'>Invalid or expired token. <a href='/forgot'>Request a new link</a>.</div>")
+
+    html = f"""
+    <!DOCTYPE html><html><head><meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <title>Reset Password • VideoHub</title>
+    <link rel='stylesheet' href='/static/css/youtube.css'>
+    <style>.box{{max-width:460px;margin:80px auto;padding:1.2rem;border:1px solid var(--border-color);border-radius:10px;background:var(--card-bg);}} .g{{display:grid;gap:.6rem}} input{{padding:.6rem;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-color);color:var(--text-primary)}} .btn{{padding:.6rem 1rem;border:none;border-radius:8px;background:var(--primary-color);color:#fff;font-weight:700;cursor:pointer;width:100%}}</style>
+    </head><body>
+      <div class='box'>
+        <h2 style='margin:0 0 .6rem;color:var(--primary-color)'>Choose a new password</h2>
+        <form method='post' action='/reset' class='g'>
+          <input type='hidden' name='token' value='{token}'>
+          <input type='password' name='new_password' placeholder='New password' minlength='6' required>
+          <input type='password' name='confirm_password' placeholder='Confirm password' minlength='6' required>
+          <button class='btn' type='submit'>Reset Password</button>
+        </form>
+        <p style='margin-top:.6rem'><a href='/login'>&larr; Back to Login</a></p>
+      </div>
+    </body></html>
+    """
+    return HTMLResponse(content=html)
+
+@app.post("/reset/", response_class=HTMLResponse)
+async def reset_password_alias(token: str = Form(...), new_password: str = Form(...), confirm_password: str = Form(...)):
+    return await reset_password(token, new_password, confirm_password)
+
+@app.post("/reset", response_class=HTMLResponse)
+async def reset_password(token: str = Form(...), new_password: str = Form(...), confirm_password: str = Form(...)):
+    if new_password != confirm_password:
+        return HTMLResponse("<div style='max-width:460px;margin:80px auto;font-family:sans-serif'>Passwords do not match. <a href='/reset?token={token}'>Try again</a>.</div>")
+
+    tokens = load_reset_tokens()
+    meta = tokens.get(token)
+    if not meta:
+        return HTMLResponse("<div style='max-width:460px;margin:80px auto;font-family:sans-serif'>Invalid or expired token. <a href='/forgot'>Request new link</a>.</div>")
+
+    try:
+        if datetime.fromisoformat(meta.get('expires_at')) < datetime.now():
+            del tokens[token]
+            save_reset_tokens(tokens)
+            return HTMLResponse("<div style='max-width:460px;margin:80px auto;font-family:sans-serif'>Token expired. <a href='/forgot'>Request new link</a>.</div>")
+    except Exception:
+        del tokens[token]
+        save_reset_tokens(tokens)
+        return HTMLResponse("<div style='max-width:460px;margin:80px auto;font-family:sans-serif'>Invalid token. <a href='/forgot'>Request new link</a>.</div>")
+
+    # Update user's password
+    from auth import load_users, save_users
+    users = load_users()
+    uname = meta.get('username')
+    if uname not in users:
+        # Clean token and fail
+        del tokens[token]
+        save_reset_tokens(tokens)
+        return HTMLResponse("<div style='max-width:460px;margin:80px auto;font-family:sans-serif'>User not found. <a href='/forgot'>Request new link</a>.</div>")
+
+    hashed = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+    users[uname]['password_hash'] = hashed
+    save_users(users)
+
+    # Invalidate token
+    del tokens[token]
+    save_reset_tokens(tokens)
+
+    return HTMLResponse("<div style='max-width:460px;margin:80px auto;font-family:sans-serif'>Password has been reset. <a href='/login'>Login</a>.</div>")
+
 VIDEO_DB = "video_db.json"
 FOLDER_DB = "folder_db.json"
+
+# Notifications and playlist subscriptions
+NOTIF_DB = "notifications.json"
+SUBS_DB = "subscriptions.json"
+
+def load_json_file(path, default):
+    try:
+        with open(path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return default
+
+# Notifications utilities
+def load_notifications_db():
+    return load_json_file(NOTIF_DB, {})
+
+def save_notifications_db(db):
+    with open(NOTIF_DB, 'w') as f:
+        json.dump(db, f, indent=2)
+
+def get_user_notifications(username):
+    db = load_notifications_db()
+    return db.get(username, [])
+
+def add_notification(username, notif):
+    db = load_notifications_db()
+    user_list = db.get(username, [])
+    # Ensure id
+    nid = notif.get('id') or f"n_{int(datetime.now().timestamp())}_{secrets.token_hex(3)}"
+    notif['id'] = nid
+    notif['created_at'] = notif.get('created_at') or datetime.now().isoformat()
+    notif['read'] = False if notif.get('read') is None else bool(notif['read'])
+    user_list.insert(0, notif)
+    db[username] = user_list
+    save_notifications_db(db)
+    return nid
+
+# Subscriptions utilities
+def load_subscriptions():
+    return load_json_file(SUBS_DB, {})
+
+def save_subscriptions(db):
+    with open(SUBS_DB, 'w') as f:
+        json.dump(db, f, indent=2)
+
+def add_subscription(username, playlist_id, folder_path, title=None):
+    subs = load_subscriptions()
+    user_subs = subs.get(username, {"playlists": {}})
+    playlists = user_subs.get("playlists", {})
+    playlists[playlist_id] = {
+        "folder_path": folder_path,
+        "title": title or playlist_id,
+        "last_checked_at": datetime.now().isoformat()
+    }
+    user_subs["playlists"] = playlists
+    subs[username] = user_subs
+    save_subscriptions(subs)
 
 # Authentication routes
 @app.get("/login", response_class=HTMLResponse)
@@ -80,7 +352,7 @@ async def register(
         user = register_user(username, email, password)
         return templates.TemplateResponse("register.html", {
             "request": request,
-            "success": "Account created successfully! You can now login."
+            "success": "Account created successfully! Pending admin approval before you can log in."
         })
     except HTTPException as e:
         return templates.TemplateResponse("register.html", {
@@ -437,9 +709,10 @@ async def get_stream(video_id: str, auth_token: str = Cookie(None)):
                 }
         
         # If we still don't have URL, use fallback embed
+        yt = video.get('yt_id', video_id)
         return {
             "stream_url": None,
-            "fallback_embed": f"https://www.youtube.com/embed/{video_id}?autoplay=1&controls=1&rel=0",
+            "fallback_embed": f"https://www.youtube.com/embed/{yt}?autoplay=1&controls=1&rel=0",
             "error": "Could not extract direct stream",
             "title": video.get('title')
         }
@@ -447,9 +720,10 @@ async def get_stream(video_id: str, auth_token: str = Cookie(None)):
     except Exception as e:
         print(f"Error extracting stream: {e}")
         # Return fallback with embed URL
+        yt = video.get('yt_id', video_id)
         return {
             "stream_url": None,
-            "fallback_embed": f"https://www.youtube.com/embed/{video_id}?autoplay=1&controls=1&rel=0",
+            "fallback_embed": f"https://www.youtube.com/embed/{yt}?autoplay=1&controls=1&rel=0",
             "error": str(e),
             "title": video.get('title')
         }
@@ -571,89 +845,161 @@ async def fetch_and_store_telegram_videos(channel: str):
         print(f"Error syncing Telegram channel: {e}")
 
 async def process_video(url: str, folder_name: str, username: str = None):
-    try:
-        # Extract video_id from URL - YouTube IDs are exactly 11 alphanumeric/dash characters
-        import re
-        # Try different URL patterns
-        patterns = [
-            r'youtube\.com/watch\?v=([a-zA-Z0-9_-]{11})',
-            r'youtu\.be/([a-zA-Z0-9_-]{11})',
-            r'youtube\.com/embed/([a-zA-Z0-9_-]{11})',
-            r'youtube\.com/live/([a-zA-Z0-9_-]{11})',
-            r'youtube\.com/watch\?v=([a-zA-Z0-9_-]+)',  # Allow longer IDs as fallback
-            r'youtu\.be/([a-zA-Z0-9_-]+)',  # Allow longer IDs as fallback
-        ]
-        
-        video_id = None
-        for pattern in patterns:
-            match = re.search(pattern, url)
-            if match:
-                extracted_id = match.group(1)
-                # Validate: YouTube video IDs should be 11 characters
-                if len(extracted_id) == 11:
-                    video_id = extracted_id
-                    break
-                # If not 11 chars, it might be a live video or playlist - try anyway
-                elif len(extracted_id) > 0:
-                    video_id = extracted_id
-                    break
-        
-        if not video_id:
-            print(f"Invalid YouTube URL: {url}")
-            return
-        
-        # Clean video_id - ensure no special characters except dash and underscore
-        video_id = video_id.strip()
+    """
+    Process a YouTube URL which can be either a single video or a playlist.
+    - For single videos: extract ID, fetch basic metadata, save entry.
+    - For playlists: iterate entries and add each video.
+    No media download; only metadata and thumbnails are fetched.
+    """
+    import re
+    import urllib.request
 
-        # Check if exists
-        db = load_db()
-        if video_id in db:
-            print("Video already exists")
-            return
-
-        # Create folder if it doesn't exist
+    def ensure_user_folder():
         if username:
             folder_path = os.path.join("videos", username, folder_name)
         else:
             folder_path = os.path.join("videos", folder_name)
         os.makedirs(folder_path, exist_ok=True)
+        return folder_path
 
-        # Use embed URL for YouTube
+    def add_video_to_db(db, video_id: str, source_url: str, title: str = None, duration: int = 0):
+        # Allow same YouTube video per different users by generating a unique ID if needed
+        final_id = video_id
+        if final_id in db:
+            existing = db[final_id]
+            if existing.get('user_id') == username:
+                # Already added for this user; do nothing
+                return False
+            # Generate a per-user unique id
+            base = f"{video_id}_{username}"
+            candidate = base
+            idx = 1
+            while candidate in db:
+                idx += 1
+                candidate = f"{base}_{idx}"
+            final_id = candidate
+
         embed_url = f"https://www.youtube.com/embed/{video_id}"
+        # Default title if missing
+        if not title:
+            title = f"YouTube Video {video_id}"
 
-        # Use basic info (yt-dlp causing issues)
-        title = f"YouTube Video {video_id}"
-        duration = 0
-        thumbnail_url = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
-
-        # Download thumbnail
-        thumbnail_path = os.path.join("static", "thumbnails", f"{video_id}.jpg")
+        # Thumbnail handling (store under original video_id to reuse across users)
+        thumb_id = video_id
+        thumbnail_url = f"https://img.youtube.com/vi/{thumb_id}/maxresdefault.jpg"
+        thumbnail_path = os.path.join("static", "thumbnails", f"{thumb_id}.jpg")
         os.makedirs(os.path.dirname(thumbnail_path), exist_ok=True)
         try:
-            import urllib.request
-            urllib.request.urlretrieve(thumbnail_url, thumbnail_path)
-        except:
-            # Create a placeholder
-            with open(thumbnail_path, 'wb') as f:
-                f.write(b'')  # Empty file
+            if not os.path.exists(thumbnail_path) or os.path.getsize(thumbnail_path) == 0:
+                urllib.request.urlretrieve(thumbnail_url, thumbnail_path)
+        except Exception:
+            # Create empty placeholder on failure
+            try:
+                with open(thumbnail_path, 'wb') as f:
+                    f.write(b'')
+            except Exception:
+                pass
 
-        # Save to db
-        db[video_id] = {
-            'video_id': video_id,
-            'user_id': username,  # Associate with user
+        db[final_id] = {
+            'video_id': final_id,
+            'yt_id': video_id,
+            'user_id': username,
             'title': title,
-            'source_url': url,
-            'folder_path': folder_name,  # Changed from folder_name to folder_path
-            'folder_name': folder_name.split('/')[-1],  # Keep for backward compatibility
+            'source_url': source_url,
+            'folder_path': folder_name,
+            'folder_name': folder_name.split('/')[-1] if folder_name else '',
             'embed_url': embed_url,
             'thumbnail_path': thumbnail_path,
-            'duration': duration,
-            'file_size': 0,  # Not downloaded
+            'duration': duration or 0,
+            'file_size': 0,
             'added_time': datetime.now().isoformat(),
             'views_count': 0
         }
-        save_db(db)
-        print(f"Video added: {title}")
+        return True
+
+    try:
+        ensure_user_folder()
+        db = load_db()
+
+        # First, try to extract info using yt_dlp (handles both videos and playlists)
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'extract_flat': 'in_playlist',  # don't resolve each entry, fast listing
+            'skip_download': True,
+            'socket_timeout': 20,
+        }
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+        except Exception as e:
+            info = None
+
+        # If playlist
+        if info and (info.get('_type') == 'playlist' or info.get('entries')):
+            entries = info.get('entries', []) or []
+            added = 0
+            for entry in entries:
+                # entries from extract_flat have 'id' and 'title'
+                vid = entry.get('id') or entry.get('url')
+                if not vid:
+                    continue
+                # YouTube IDs are 11 chars typically; sanitize
+                vid = vid.strip()
+                if '/' in vid:
+                    # Sometimes url is returned; try regex to capture v parameter or last path segment
+                    m = re.search(r'(?:v=|/)([a-zA-Z0-9_-]{11})', vid)
+                    if m:
+                        vid = m.group(1)
+                if len(vid) < 5:
+                    continue
+                title = entry.get('title') or None
+                if add_video_to_db(db, vid, f"https://www.youtube.com/watch?v={vid}", title=title):
+                    added += 1
+            save_db(db)
+            # Record subscription for updates
+            try:
+                playlist_id = info.get('id') or ''
+                playlist_title = info.get('title') or playlist_id
+                if playlist_id and username:
+                    add_subscription(username, playlist_id, folder_name, playlist_title)
+            except Exception:
+                pass
+            print(f"Playlist processed: {added} new video(s) added")
+            return
+
+        # Otherwise, assume single video
+        video_id = None
+        # Try to get id from info first
+        if info and info.get('id'):
+            video_id = info['id']
+            title = info.get('title')
+            duration = info.get('duration') or 0
+            if add_video_to_db(db, video_id, url, title=title, duration=duration):
+                save_db(db)
+                print(f"Video added: {title or video_id}")
+                return
+        
+        # Fallback: regex extraction from URL
+        patterns = [
+            r'youtube\.com/watch\?v=([a-zA-Z0-9_-]{11})',
+            r'youtu\.be/([a-zA-Z0-9_-]{11})',
+            r'youtube\.com/embed/([a-zA-Z0-9_-]{11})',
+            r'youtube\.com/live/([a-zA-Z0-9_-]{11})',
+            r'v=([a-zA-Z0-9_-]{11})'
+        ]
+        for pattern in patterns:
+            m = re.search(pattern, url)
+            if m:
+                video_id = m.group(1)
+                break
+        if not video_id:
+            print(f"Invalid or unsupported YouTube URL: {url}")
+            return
+
+        if add_video_to_db(db, video_id, url):
+            save_db(db)
+            print(f"Video added: {video_id}")
     except Exception as e:
         print(f"Error processing video: {e}")
 
@@ -751,6 +1097,7 @@ async def get_admin_stats(auth_token: str = Cookie(None)):
         raise HTTPException(status_code=401, detail="Invalid authentication")
 
     # Calculate statistics
+    from datetime import datetime, timedelta
     all_users = load_users()
     db = load_db()
 
@@ -776,13 +1123,43 @@ async def get_admin_stats(auth_token: str = Cookie(None)):
     folder_db = load_folder_db()
     total_folders = len(folder_db)
 
+    # New metrics
+    one_week_ago = datetime.now() - timedelta(days=7)
+    def parse_time(ts):
+        try:
+            return datetime.fromisoformat(ts)
+        except Exception:
+            return None
+    new_this_week = sum(1 for v in db.values() if parse_time(v.get('added_time') or '') and parse_time(v.get('added_time')).replace(tzinfo=None) >= one_week_ago)
+
+    # Broken count (missing or zero-size thumbnails or bad source_url)
+    broken_count = 0
+    for v in db.values():
+        t = v.get('thumbnail_path')
+        bad_thumb = not t or not os.path.exists(t) or (os.path.exists(t) and os.path.getsize(t) == 0)
+        src = v.get('source_url', '') or ''
+        bad_src = not src.startswith('http') and 'youtube.com' not in src and 'youtu.be' not in src
+        if bad_thumb or bad_src:
+            broken_count += 1
+
+    # Queue count (queued or running)
+    queue_count = 0
+    try:
+        q = load_queue()
+        queue_count = sum(1 for item in q if item.get('status') in ['queued', 'running'])
+    except Exception:
+        queue_count = 0
+
     return {
         "total_users": total_users,
         "active_users": active_users,
         "total_videos": total_videos,
         "total_views": total_views,
         "storage_used": storage_used_mb,
-        "total_folders": total_folders
+        "total_folders": total_folders,
+        "new_this_week": new_this_week,
+        "broken_count": broken_count,
+        "queue_count": queue_count,
     }
 
 @app.get("/api/admin/users")
@@ -986,6 +1363,472 @@ async def copy_video(video_id: str = Form(...), new_folder_path: str = Form(...)
     save_db(db)
 
     return {"message": f"Video copied to '{new_folder_path}'", "new_video_id": new_video_id}
+
+# ===== Admin enhancements: queue, bulk ops, videos listing, health checks =====
+QUEUE_FILE = "admin_queue.json"
+
+def load_queue():
+    try:
+        with open(QUEUE_FILE, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+
+def save_queue(queue):
+    with open(QUEUE_FILE, 'w') as f:
+        json.dump(queue, f, indent=2)
+
+async def _process_queue_item(item_id: str):
+    queue = load_queue()
+    item = next((it for it in queue if it.get('id') == item_id), None)
+    if not item:
+        return
+    if item.get('status') in ['canceled', 'completed']:
+        return
+    item['status'] = 'running'
+    save_queue(queue)
+    try:
+        await process_video(item['url'], item['folder_path'], item.get('requested_by'))
+        # Mark complete
+        queue = load_queue()
+        item = next((it for it in queue if it.get('id') == item_id), None)
+        if item:
+            item['status'] = 'completed'
+            item['completed_at'] = datetime.now().isoformat()
+            save_queue(queue)
+    except Exception as e:
+        queue = load_queue()
+        item = next((it for it in queue if it.get('id') == item_id), None)
+        if item:
+            item['status'] = 'failed'
+            item['error'] = str(e)
+            item['completed_at'] = datetime.now().isoformat()
+            save_queue(queue)
+
+@app.get('/api/admin/videos')
+async def admin_list_videos(q: str = None, folder: str = None, broken: bool = False, page: int = 1, page_size: int = 50, auth_token: str = Cookie(None)):
+    # Admin auth
+    if not auth_token:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+        if not user or user.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail='Admin access required')
+    except Exception:
+        raise HTTPException(status_code=401, detail='Invalid authentication')
+
+    db = load_db()
+    videos = list(db.values())
+
+    # Filters
+    if q:
+        qs = q.lower()
+        videos = [v for v in videos if qs in (v.get('title','').lower() + ' ' + v.get('source_url','').lower())]
+    if folder:
+        videos = [v for v in videos if v.get('folder_path') == folder or v.get('folder_name') == folder]
+    if broken:
+        def is_broken(v):
+            t = v.get('thumbnail_path')
+            bad_thumb = not t or not os.path.exists(t) or (os.path.exists(t) and os.path.getsize(t) == 0)
+            src = v.get('source_url', '') or ''
+            bad_src = not src.startswith('http') and 'youtube.com' not in src and 'youtu.be' not in src
+            return bad_thumb or bad_src
+        videos = [v for v in videos if is_broken(v)]
+
+    total = len(videos)
+    start = max((page-1)*page_size, 0)
+    end = start + page_size
+    return { 'items': videos[start:end], 'total': total, 'page': page, 'page_size': page_size }
+
+@app.post('/api/admin/videos/bulk/delete')
+async def admin_bulk_delete(video_ids: str = Form(...), auth_token: str = Cookie(None)):
+    # Admin auth
+    if not auth_token:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+        if not user or user.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail='Admin access required')
+    except Exception:
+        raise HTTPException(status_code=401, detail='Invalid authentication')
+
+    ids = [vid.strip() for vid in (video_ids or '').split(',') if vid.strip()]
+    db = load_db()
+    deleted = 0
+    for vid in ids:
+        if vid in db:
+            del db[vid]
+            deleted += 1
+    save_db(db)
+    return { 'deleted': deleted }
+
+@app.post('/api/admin/videos/bulk/move')
+async def admin_bulk_move(video_ids: str = Form(...), new_folder_path: str = Form(...), auth_token: str = Cookie(None)):
+    if not auth_token:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+        if not user or user.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail='Admin access required')
+    except Exception:
+        raise HTTPException(status_code=401, detail='Invalid authentication')
+
+    ids = [vid.strip() for vid in (video_ids or '').split(',') if vid.strip()]
+    db = load_db()
+    moved = 0
+    for vid in ids:
+        if vid in db:
+            db[vid]['folder_path'] = new_folder_path
+            db[vid]['folder_name'] = new_folder_path.split('/')[-1] if new_folder_path else ''
+            moved += 1
+    save_db(db)
+    return { 'moved': moved }
+
+@app.post('/api/admin/videos/bulk/copy')
+async def admin_bulk_copy(video_ids: str = Form(...), new_folder_path: str = Form(...), auth_token: str = Cookie(None)):
+    if not auth_token:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+        if not user or user.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail='Admin access required')
+    except Exception:
+        raise HTTPException(status_code=401, detail='Invalid authentication')
+
+    ids = [vid.strip() for vid in (video_ids or '').split(',') if vid.strip()]
+    db = load_db()
+    copied = 0
+    for vid in ids:
+        if vid in db:
+            base_id = vid
+            new_id = f"{base_id}_copy_{int(datetime.now().timestamp())}"
+            new_video = db[vid].copy()
+            new_video['video_id'] = new_id
+            new_video['folder_path'] = new_folder_path
+            new_video['folder_name'] = new_folder_path.split('/')[-1] if new_folder_path else ''
+            new_video['added_time'] = datetime.now().isoformat()
+            new_video['views_count'] = 0
+            db[new_id] = new_video
+            copied += 1
+    save_db(db)
+    return { 'copied': copied }
+
+@app.post('/api/admin/videos/bulk/tag')
+async def admin_bulk_tag(video_ids: str = Form(...), action: str = Form(...), tag: str = Form(...), auth_token: str = Cookie(None)):
+    if not auth_token:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+        if not user or user.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail='Admin access required')
+    except Exception:
+        raise HTTPException(status_code=401, detail='Invalid authentication')
+
+    ids = [vid.strip() for vid in (video_ids or '').split(',') if vid.strip()]
+    db = load_db()
+    updated = 0
+    for vid in ids:
+        if vid in db:
+            tags = db[vid].get('tags') or []
+            if action == 'add' and tag not in tags:
+                tags.append(tag)
+            elif action == 'remove' and tag in tags:
+                tags.remove(tag)
+            db[vid]['tags'] = tags
+            updated += 1
+    save_db(db)
+    return { 'updated': updated }
+
+@app.post('/api/admin/import/queue')
+async def admin_import_queue(background_tasks: BackgroundTasks, urls: str = Form(...), folder_path: str = Form(...), auth_token: str = Cookie(None)):
+    if not auth_token:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+        if not user or user.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail='Admin access required')
+    except Exception:
+        raise HTTPException(status_code=401, detail='Invalid authentication')
+
+    lines = [u.strip() for u in urls.splitlines() if u.strip()]
+    queue = load_queue()
+    created = []
+    now = datetime.now().isoformat()
+    for idx, url in enumerate(lines):
+        item_id = f"q_{int(datetime.now().timestamp())}_{idx}"
+        item = {
+            'id': item_id,
+            'url': url,
+            'folder_path': folder_path,
+            'requested_by': username,
+            'status': 'queued',
+            'created_at': now
+        }
+        queue.append(item)
+        created.append(item)
+        # schedule processing
+        background_tasks.add_task(_process_queue_item, item_id)
+    save_queue(queue)
+    return { 'created': len(created), 'items': created }
+
+@app.get('/api/admin/import/queue')
+async def admin_get_queue(auth_token: str = Cookie(None)):
+    if not auth_token:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+        if not user or user.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail='Admin access required')
+    except Exception:
+        raise HTTPException(status_code=401, detail='Invalid authentication')
+    return { 'items': load_queue() }
+
+@app.post('/api/admin/import/queue/{item_id}/cancel')
+async def admin_cancel_queue(item_id: str, auth_token: str = Cookie(None)):
+    if not auth_token:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+        if not user or user.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail='Admin access required')
+    except Exception:
+        raise HTTPException(status_code=401, detail='Invalid authentication')
+
+    queue = load_queue()
+    item = next((it for it in queue if it.get('id') == item_id), None)
+    if not item:
+        raise HTTPException(status_code=404, detail='Item not found')
+    if item.get('status') == 'queued':
+        item['status'] = 'canceled'
+        item['completed_at'] = datetime.now().isoformat()
+        save_queue(queue)
+        return { 'message': 'Canceled' }
+    return { 'message': 'Cannot cancel (already running or completed)' }
+
+@app.get('/api/admin/check/broken')
+async def admin_check_broken(auth_token: str = Cookie(None)):
+    if not auth_token:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+        if not user or user.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail='Admin access required')
+    except Exception:
+        raise HTTPException(status_code=401, detail='Invalid authentication')
+
+    db = load_db()
+    broken = []
+    for vid, v in db.items():
+        t = v.get('thumbnail_path')
+        bad_thumb = not t or not os.path.exists(t) or (os.path.exists(t) and os.path.getsize(t) == 0)
+        src = v.get('source_url', '') or ''
+        bad_src = not src.startswith('http') and 'youtube.com' not in src and 'youtu.be' not in src
+        if bad_thumb or bad_src:
+            broken.append({ 'video_id': vid, 'title': v.get('title'), 'bad_thumb': bad_thumb, 'bad_src': bad_src })
+    return { 'items': broken }
+
+@app.post('/api/admin/fix/metadata')
+async def admin_fix_metadata(video_ids: str = Form(...), auth_token: str = Cookie(None)):
+    if not auth_token:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        user = users.get(username)
+        if not user or user.get('role') != 'admin':
+            raise HTTPException(status_code=403, detail='Admin access required')
+    except Exception:
+        raise HTTPException(status_code=401, detail='Invalid authentication')
+
+    ids = [vid.strip() for vid in (video_ids or '').split(',') if vid.strip()]
+    db = load_db()
+    fixed = 0
+    for vid in ids:
+        if vid not in db:
+            continue
+        v = db[vid]
+        # Refresh title via yt_dlp when possible
+        try:
+            with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True}) as ydl:
+                info = ydl.extract_info(v.get('source_url'), download=False)
+                if info and info.get('title'):
+                    v['title'] = info['title']
+                if info and info.get('duration'):
+                    v['duration'] = info['duration']
+        except Exception:
+            pass
+        # Refresh thumbnail
+        try:
+            import urllib.request
+            thumb_url = f"https://img.youtube.com/vi/{vid}/maxresdefault.jpg"
+            thumb_path = os.path.join('static', 'thumbnails', f'{vid}.jpg')
+            os.makedirs(os.path.dirname(thumb_path), exist_ok=True)
+            urllib.request.urlretrieve(thumb_url, thumb_path)
+            v['thumbnail_path'] = thumb_path
+        except Exception:
+            pass
+        fixed += 1
+    save_db(db)
+    return { 'fixed': fixed }
+
+# ===== Notifications API =====
+@app.get("/api/notifications")
+async def list_notifications(read: str = None, auth_token: str = Cookie(None)):
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            raise HTTPException(status_code=401, detail="User not found")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
+    items = get_user_notifications(username)
+    if read is not None:
+        flag = (str(read).lower() == 'true')
+        items = [n for n in items if bool(n.get('read')) == flag]
+    unread_count = sum(1 for n in get_user_notifications(username) if not n.get('read'))
+    return {"items": items, "unread_count": unread_count}
+
+@app.post("/api/notifications/mark_read")
+async def mark_notifications_read(ids: str = Form(...), auth_token: str = Cookie(None)):
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            raise HTTPException(status_code=401, detail="User not found")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
+    wanted = [i.strip() for i in (ids or '').split(',') if i.strip()]
+    db = load_notifications_db()
+    lst = db.get(username, [])
+    for n in lst:
+        if n.get('id') in wanted:
+            n['read'] = True
+    db[username] = lst
+    save_notifications_db(db)
+    return {"marked": len(wanted)}
+
+@app.post("/api/notifications/mark_all_read")
+async def mark_all_notifications_read(auth_token: str = Cookie(None)):
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            raise HTTPException(status_code=401, detail="User not found")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
+    db = load_notifications_db()
+    lst = db.get(username, [])
+    for n in lst:
+        n['read'] = True
+    db[username] = lst
+    save_notifications_db(db)
+    return {"marked": len(lst)}
+
+# ===== Playlist updates checker =====
+@app.get("/api/playlist/check_updates")
+async def check_playlist_updates(auth_token: str = Cookie(None)):
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        from auth import verify_token, load_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            raise HTTPException(status_code=401, detail="User not found")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication")
+
+    subs = load_subscriptions().get(username, {}).get('playlists', {})
+    if not subs:
+        return {"updated": 0, "details": []}
+
+    updated = 0
+    details = []
+    for pid, meta in subs.items():
+        folder_path = meta.get('folder_path')
+        playlist_title = meta.get('title') or pid
+        # Fetch playlist entries
+        try:
+            with yt_dlp.YoutubeDL({
+                'quiet': True,
+                'no_warnings': True,
+                'extract_flat': 'in_playlist',
+                'skip_download': True
+            }) as ydl:
+                info = ydl.extract_info(f"https://www.youtube.com/playlist?list={pid}", download=False)
+                entries = info.get('entries', []) if info else []
+        except Exception:
+            entries = []
+        # For each entry, if not present for this user, add and notify
+        for entry in entries:
+            ytid = (entry.get('id') or '').strip()
+            if not ytid:
+                continue
+            # Check existence for this user by yt_id
+            db = load_db()
+            exists = any(v for v in db.values() if v.get('user_id') == username and (v.get('yt_id') == ytid or (len(v.get('video_id',''))==11 and v.get('video_id')==ytid)))
+            if exists:
+                continue
+            # Add via process_video
+            await process_video(f"https://www.youtube.com/watch?v={ytid}", folder_path, username)
+            updated += 1
+            # Notification
+            add_notification(username, {
+                'type': 'playlist_update',
+                'playlist_id': pid,
+                'playlist_title': playlist_title,
+                'video_id': ytid,
+                'video_title': entry.get('title') or ytid,
+                'folder_path': folder_path
+            })
+        # Update last_checked_at
+        subs_db = load_subscriptions()
+        if username in subs_db and 'playlists' in subs_db[username] and pid in subs_db[username]['playlists']:
+            subs_db[username]['playlists'][pid]['last_checked_at'] = datetime.now().isoformat()
+            save_subscriptions(subs_db)
+        details.append({"playlist_id": pid, "title": playlist_title})
+
+    return {"updated": updated, "details": details}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+a<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -7,209 +7,41 @@
     <link rel="stylesheet" href="/static/css/youtube.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        .admin-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        .admin-header {
-            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(238, 90, 36, 0.1));
-            border: 1px solid rgba(255, 107, 107, 0.3);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-
-        .admin-header h1 {
-            color: #ff6b6b;
-            margin-bottom: 0.5rem;
-            font-size: 2.5rem;
-        }
-
-        .admin-nav {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .admin-nav button {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            background: var(--secondary-color);
-            color: var(--text-primary);
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .admin-nav button.active {
-            background: #ff6b6b;
-            color: white;
-        }
-
-        .admin-nav button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-        }
-
-        .admin-section {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .admin-section h2 {
-            color: var(--primary-color);
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05));
-            border: 1px solid rgba(255, 107, 107, 0.3);
-            border-radius: 8px;
-            padding: 1.5rem;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #ff6b6b;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .users-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-
-        .users-table th,
-        .users-table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .users-table th {
-            background: var(--secondary-color);
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .status-active {
-            color: #28a745;
-            font-weight: 600;
-        }
-
-        .status-inactive {
-            color: #dc3545;
-            font-weight: 600;
-        }
-
-        .role-admin {
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .role-user {
-            background: rgba(0, 123, 255, 0.2);
-            color: #007bff;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .action-btn {
-            padding: 0.25rem 0.5rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            margin-right: 0.5rem;
-        }
-
-        .btn-ban {
-            background: #ffc107;
-            color: #212529;
-        }
-
-        .btn-delete {
-            background: #dc3545;
-            color: white;
-        }
-
-        .btn-activate {
-            background: #28a745;
-            color: white;
-        }
-
-        .back-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: var(--secondary-color);
-            color: var(--text-primary);
-            border: none;
-            border-radius: 8px;
-            padding: 0.75rem 1rem;
-            cursor: pointer;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            z-index: 1000;
-        }
-
-        .back-btn:hover {
-            background: var(--border-color);
-        }
-
-        @media (max-width: 768px) {
-            .admin-nav {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .users-table {
-                font-size: 0.8rem;
-            }
-
-            .admin-container {
-                padding: 1rem;
-            }
-        }
+        .admin-container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .admin-header { background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(238, 90, 36, 0.1)); border: 1px solid rgba(255, 107, 107, 0.3); border-radius: 12px; padding: 2rem; margin-bottom: 2rem; text-align: center; }
+        .admin-header h1 { color: #ff6b6b; margin-bottom: 0.5rem; font-size: 2.2rem; }
+        .admin-nav { display: flex; gap: 0.5rem; margin-bottom: 1.2rem; flex-wrap: wrap; justify-content: center; }
+        .admin-nav button { padding: 0.6rem 1.2rem; border: none; border-radius: 8px; background: var(--secondary-color); color: var(--text-primary); cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .admin-nav button.active { background: #ff6b6b; color: white; }
+        .admin-nav button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .admin-section { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.2rem; margin-bottom: 1.2rem; }
+        .admin-section h2 { color: var(--primary-color); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.8rem; margin-bottom: 1rem; }
+        .stat-card { background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05)); border: 1px solid rgba(255, 107, 107, 0.3); border-radius: 8px; padding: 1rem; text-align: center; }
+        .stat-number { font-size: 1.6rem; font-weight: bold; color: #ff6b6b; margin-bottom: 0.25rem; }
+        .stat-label { color: var(--text-secondary); font-size: 0.85rem; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 0.6rem; border-bottom: 1px solid var(--border-color); text-align: left; }
+        .table th { background: var(--secondary-color); font-weight: 600; }
+        .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.8rem; align-items: center; }
+        .filters input[type="text"], .filters input[type="search"], .filters input[type="checkbox"], .filters select, .filters textarea { padding: 0.5rem; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 6px; }
+        .bulk-bar { display: flex; gap: 0.5rem; align-items: center; margin: 0.6rem 0; }
+        .btn { padding: 0.45rem 0.8rem; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn-primary { background: #ff6b6b; color: white; }
+        .btn-secondary { background: var(--secondary-color); color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .status-pill { padding: 0.2rem 0.5rem; border-radius: 999px; font-size: 0.75rem; border: 1px solid var(--border-color); }
+        .status-queued { background: rgba(0,0,0,0.05); }
+        .status-running { background: rgba(0, 123, 255, 0.15); color: #007bff; }
+        .status-completed { background: rgba(40, 167, 69, 0.15); color: #28a745; }
+        .status-failed { background: rgba(220, 53, 69, 0.15); color: #dc3545; }
+        .status-canceled { background: rgba(108, 117, 125, 0.15); color: #6c757d; }
+        .tag { display: inline-block; background: rgba(0, 123, 255, 0.15); color: #007bff; border-radius: 999px; padding: 0.1rem 0.5rem; font-size: 0.75rem; margin-right: 0.25rem; }
+        .pager { display: flex; gap: 0.5rem; align-items: center; justify-content: flex-end; margin-top: 0.6rem; }
+        .back-btn { position: fixed; top: 20px; left: 20px; background: var(--secondary-color); color: var(--text-primary); border: none; border-radius: 8px; padding: 0.6rem 0.8rem; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; z-index: 1000; }
+        .back-btn:hover { background: var(--border-color); }
+        @media (max-width: 768px) { .admin-container { padding: 1rem; } .stats-grid { grid-template-columns: 1fr; } .table { font-size: 0.85rem; } }
     </style>
 </head>
 <body>
@@ -220,73 +52,126 @@
     <div class="admin-container">
         <div class="admin-header">
             <h1><i class="fas fa-crown"></i> Admin Panel</h1>
-            <p>Complete system administration and user management</p>
+            <p>System administration, imports, health checks, and user management</p>
         </div>
 
         <div class="admin-nav">
-            <button onclick="showSection('dashboard')" class="active" id="btn-dashboard">
-                <i class="fas fa-chart-line"></i> Dashboard
-            </button>
-            <button onclick="showSection('users')" id="btn-users">
-                <i class="fas fa-users"></i> User Management
-            </button>
-            <button onclick="showSection('content')" id="btn-content">
-                <i class="fas fa-video"></i> Content Moderation
-            </button>
-            <button onclick="showSection('logs')" id="btn-logs">
-                <i class="fas fa-history"></i> Activity Logs
-            </button>
-            <button onclick="showSection('settings')" id="btn-settings">
-                <i class="fas fa-cog"></i> System Settings
-            </button>
+            <button onclick="showSection('dashboard')" class="active" id="btn-dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
+            <button onclick="showSection('videos')" id="btn-videos"><i class="fas fa-table"></i> Videos</button>
+            <button onclick="showSection('import')" id="btn-import"><i class="fas fa-cloud-upload-alt"></i> Import Center</button>
+            <button onclick="showSection('health')" id="btn-health"><i class="fas fa-stethoscope"></i> Health</button>
+            <button onclick="showSection('users')" id="btn-users"><i class="fas fa-users"></i> Users</button>
+            <button onclick="showSection('settings')" id="btn-settings"><i class="fas fa-cog"></i> Settings</button>
         </div>
 
         <!-- Dashboard Section -->
         <div id="dashboard-section" class="admin-section">
             <h2><i class="fas fa-chart-line"></i> System Dashboard</h2>
-
             <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-number" id="total-users">0</div>
-                    <div class="stat-label">Total Users</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="active-users">0</div>
-                    <div class="stat-label">Active Users</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-videos">0</div>
-                    <div class="stat-label">Total Videos</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-views">0</div>
-                    <div class="stat-label">Total Views</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="storage-used">0 MB</div>
-                    <div class="stat-label">Storage Used</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-number" id="total-folders">0</div>
-                    <div class="stat-label">Total Folders</div>
-                </div>
+                <div class="stat-card"><div class="stat-number" id="total-users">0</div><div class="stat-label">Total Users</div></div>
+                <div class="stat-card"><div class="stat-number" id="active-users">0</div><div class="stat-label">Active Users</div></div>
+                <div class="stat-card"><div class="stat-number" id="total-videos">0</div><div class="stat-label">Total Videos</div></div>
+                <div class="stat-card"><div class="stat-number" id="total-views">0</div><div class="stat-label">Total Views</div></div>
+                <div class="stat-card"><div class="stat-number" id="storage-used">0 MB</div><div class="stat-label">Storage Used</div></div>
+                <div class="stat-card"><div class="stat-number" id="total-folders">0</div><div class="stat-label">Total Folders</div></div>
+                <div class="stat-card"><div class="stat-number" id="new-this-week">0</div><div class="stat-label">New This Week</div></div>
+                <div class="stat-card"><div class="stat-number" id="broken-count">0</div><div class="stat-label">Broken Items</div></div>
+                <div class="stat-card"><div class="stat-number" id="queue-count">0</div><div class="stat-label">Queue</div></div>
             </div>
+            <h3>Recently Added</h3>
+            <div id="recent-activity"><p>Loading recent items...</p></div>
+        </div>
 
-            <h3>Recent Activity</h3>
-            <div id="recent-activity">
-                <p>Loading recent activity...</p>
+        <!-- Videos Section -->
+        <div id="videos-section" class="admin-section" style="display: none;">
+            <h2><i class="fas fa-table"></i> Videos</h2>
+            <div class="filters">
+                <input type="search" id="vid-search" placeholder="Search by title or URL">
+                <input list="folderOptions" id="vid-folder" placeholder="Filter: folder path">
+                <datalist id="folderOptions"></datalist>
+                <label style="display:flex;align-items:center;gap:0.3rem;"><input type="checkbox" id="vid-broken"> Broken only</label>
+                <button class="btn btn-secondary" onclick="loadVideos(1)"><i class="fas fa-filter"></i> Apply</button>
+                <button class="btn" onclick="resetVideoFilters()"><i class="fas fa-undo"></i> Reset</button>
+            </div>
+            <div class="bulk-bar">
+                <span id="selected-count">0 selected</span>
+                <button class="btn btn-warning" onclick="bulkMove()"><i class="fas fa-arrows-alt"></i> Move</button>
+                <button class="btn btn-secondary" onclick="bulkCopy()"><i class="fas fa-copy"></i> Copy</button>
+                <button class="btn btn-danger" onclick="bulkDelete()"><i class="fas fa-trash"></i> Delete</button>
+                <input type="text" id="tag-input" placeholder="Tag name">
+                <button class="btn btn-secondary" onclick="bulkTag('add')"><i class="fas fa-tag"></i> Add Tag</button>
+                <button class="btn btn-secondary" onclick="bulkTag('remove')"><i class="fas fa-tag"></i> Remove Tag</button>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="select-all" onclick="toggleSelectAll(this)"></th>
+                        <th>Title</th>
+                        <th>Folder</th>
+                        <th>Views</th>
+                        <th>Added</th>
+                        <th>Tags</th>
+                    </tr>
+                </thead>
+                <tbody id="videos-tbody"><tr><td colspan="6">Loading...</td></tr></tbody>
+            </table>
+            <div class="pager">
+                <button class="btn" onclick="prevPage()">Prev</button>
+                <span id="page-info"></span>
+                <button class="btn" onclick="nextPage()">Next</button>
             </div>
         </div>
 
-        <!-- User Management Section -->
+        <!-- Import Center Section -->
+        <div id="import-section" class="admin-section" style="display: none;">
+            <h2><i class="fas fa-cloud-upload-alt"></i> Import Center</h2>
+            <div class="filters">
+                <textarea id="import-urls" rows="5" style="width:100%;" placeholder="Paste YouTube video or playlist URLs, one per line..."></textarea>
+                <input list="folderOptions" id="import-folder" placeholder="Target folder path">
+                <button class="btn btn-primary" onclick="enqueueImports()"><i class="fas fa-plus-circle"></i> Enqueue</button>
+            </div>
+            <h3>Queue</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>URL</th>
+                        <th>Folder</th>
+                        <th>Status</th>
+                        <th>Requested By</th>
+                        <th>Created</th>
+                        <th>Completed</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="queue-tbody"><tr><td colspan="7">Loading...</td></tr></tbody>
+            </table>
+        </div>
+
+        <!-- Health Section -->
+        <div id="health-section" class="admin-section" style="display: none;">
+            <h2><i class="fas fa-stethoscope"></i> Health</h2>
+            <div class="filters">
+                <button class="btn btn-secondary" onclick="runBrokenCheck()"><i class="fas fa-search"></i> Run Broken Check</button>
+                <button class="btn btn-primary" onclick="fixMetadata()"><i class="fas fa-wrench"></i> Fix Selected Metadata</button>
+            </div>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="health-select-all" onclick="toggleHealthSelectAll(this)"></th>
+                        <th>Video ID</th>
+                        <th>Title</th>
+                        <th>Issues</th>
+                    </tr>
+                </thead>
+                <tbody id="health-tbody"><tr><td colspan="4">Click 'Run Broken Check' to scan.</td></tr></tbody>
+            </table>
+        </div>
+
+        <!-- Users Section -->
         <div id="users-section" class="admin-section" style="display: none;">
             <h2><i class="fas fa-users"></i> User Management</h2>
-
-            <div style="margin-bottom: 1rem;">
-                <input type="text" id="user-search" placeholder="Search users..." style="padding: 0.5rem; width: 300px; border: 1px solid var(--border-color); border-radius: 4px;">
-            </div>
-
-            <table class="users-table">
+            <div style="margin-bottom: 0.6rem;"><input type="text" id="user-search" placeholder="Search users..." style="padding: 0.5rem; width: 300px; border: 1px solid var(--border-color); border-radius: 6px;"></div>
+            <table class="table">
                 <thead>
                     <tr>
                         <th>Username</th>
@@ -299,63 +184,32 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody id="users-table-body">
-                    <tr>
-                        <td colspan="8">Loading users...</td>
-                    </tr>
-                </tbody>
+                <tbody id="users-table-body"><tr><td colspan="8">Loading users...</td></tr></tbody>
             </table>
         </div>
 
-        <!-- Content Moderation Section -->
-        <div id="content-section" class="admin-section" style="display: none;">
-            <h2><i class="fas fa-video"></i> Content Moderation</h2>
-            <p>Monitor and moderate user-generated content</p>
-            <div id="content-moderation">
-                <p>Content moderation features coming soon...</p>
-            </div>
-        </div>
-
-        <!-- Activity Logs Section -->
-        <div id="logs-section" class="admin-section" style="display: none;">
-            <h2><i class="fas fa-history"></i> Activity Logs</h2>
-            <p>System activity and user actions</p>
-            <div id="activity-logs">
-                <p>Activity logging features coming soon...</p>
-            </div>
-        </div>
-
-        <!-- System Settings Section -->
+        <!-- Settings Section -->
         <div id="settings-section" class="admin-section" style="display: none;">
-            <h2><i class="fas fa-cog"></i> System Settings</h2>
-            <p>Configure system-wide settings</p>
-            <div id="system-settings">
-                <p>System settings features coming soon...</p>
-            </div>
+            <h2><i class="fas fa-cog"></i> Settings</h2>
+            <p>System settings features coming soon...</p>
         </div>
     </div>
 
     <script>
         let currentSection = 'dashboard';
+        let selected = new Set();
+        let currentPage = 1;
+        let pageSize = 50;
+        let totalItems = 0;
+        let queueTimer = null;
 
         function showSection(sectionName) {
-            // Hide all sections
-            document.querySelectorAll('.admin-section').forEach(section => {
-                section.style.display = 'none';
-            });
-
-            // Remove active class from all buttons
-            document.querySelectorAll('.admin-nav button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            // Show selected section
+            document.querySelectorAll('.admin-section').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.admin-nav button').forEach(b => b.classList.remove('active'));
             document.getElementById(sectionName + '-section').style.display = 'block';
             document.getElementById('btn-' + sectionName).classList.add('active');
-
             currentSection = sectionName;
-
-            // Load data for the section
+            if (queueTimer) { clearInterval(queueTimer); queueTimer = null; }
             loadSectionData(sectionName);
         }
 
@@ -363,113 +217,251 @@
             try {
                 if (section === 'dashboard') {
                     await loadDashboardStats();
+                    await loadRecent();
                 } else if (section === 'users') {
                     await loadUsers();
+                } else if (section === 'videos') {
+                    await preloadFolders();
+                    await loadVideos(1);
+                } else if (section === 'import') {
+                    await preloadFolders();
+                    await loadQueue();
+                    queueTimer = setInterval(() => { if (currentSection === 'import') loadQueue(); }, 6000);
+                } else if (section === 'health') {
+                    // no-op until user clicks scan
                 }
-            } catch (error) {
-                console.error('Error loading section data:', error);
-            }
+            } catch (e) { console.error('Section load error', e); }
         }
 
         async function loadDashboardStats() {
-            try {
-                const response = await fetch('/api/admin/stats');
-                const stats = await response.json();
+            const res = await fetch('/api/admin/stats');
+            const s = await res.json();
+            document.getElementById('total-users').textContent = s.total_users || 0;
+            document.getElementById('active-users').textContent = s.active_users || 0;
+            document.getElementById('total-videos').textContent = s.total_videos || 0;
+            document.getElementById('total-views').textContent = s.total_views || 0;
+            document.getElementById('storage-used').textContent = (s.storage_used || 0) + ' MB';
+            document.getElementById('total-folders').textContent = s.total_folders || 0;
+            document.getElementById('new-this-week').textContent = s.new_this_week || 0;
+            document.getElementById('broken-count').textContent = s.broken_count || 0;
+            document.getElementById('queue-count').textContent = s.queue_count || 0;
+        }
 
-                document.getElementById('total-users').textContent = stats.total_users || 0;
-                document.getElementById('active-users').textContent = stats.active_users || 0;
-                document.getElementById('total-videos').textContent = stats.total_videos || 0;
-                document.getElementById('total-views').textContent = stats.total_views || 0;
-                document.getElementById('storage-used').textContent = (stats.storage_used || 0) + ' MB';
-                document.getElementById('total-folders').textContent = stats.total_folders || 0;
-            } catch (error) {
-                console.error('Error loading dashboard stats:', error);
+        async function loadRecent() {
+            try {
+                const res = await fetch('/api/admin/videos?page=1&page_size=10');
+                const data = await res.json();
+                const items = data.items || [];
+                const html = items.map(v => `
+                    <div style="display:flex;align-items:center;gap:0.6rem;margin:0.3rem 0;">
+                        <img src="${thumbUrl(v)}" alt="thumb" style="width:64px;height:36px;object-fit:cover;border-radius:4px;">
+                        <div>
+                            <div style="font-weight:600;">${escapeHtml(v.title || '')}</div>
+                            <div style="font-size:0.8rem;color:var(--text-secondary);">${escapeHtml(v.folder_path || v.folder_name || '')} • ${formatDate(v.added_time)}</div>
+                        </div>
+                    </div>`).join('') || '<p>No recent items.</p>';
+                document.getElementById('recent-activity').innerHTML = html;
+            } catch (e) {
+                document.getElementById('recent-activity').innerHTML = '<p>Error loading recent items</p>';
             }
         }
 
         async function loadUsers() {
-            try {
-                const response = await fetch('/api/admin/users');
-                const data = await response.json();
-                const users = data.users || [];
-
-                const tbody = document.getElementById('users-table-body');
-                tbody.innerHTML = users.map(user => `
-                    <tr>
-                        <td>${user.username}</td>
-                        <td>${user.email}</td>
-                        <td><span class="role-${user.role}">${user.role}</span></td>
-                        <td><span class="status-${user.is_active ? 'active' : 'inactive'}">${user.is_active ? 'Active' : 'Inactive'}</span></td>
-                        <td>${new Date(user.created_at).toLocaleDateString()}</td>
-                        <td>${user.last_login ? new Date(user.last_login).toLocaleDateString() : 'Never'}</td>
-                        <td>${user.login_count || 0}</td>
-                        <td>
-                            ${user.username !== 'admin' ? `
-                                <button class="action-btn btn-${user.is_active ? 'ban' : 'activate'}" onclick="toggleUserStatus('${user.username}')">
-                                    ${user.is_active ? 'Ban' : 'Activate'}
-                                </button>
-                                <button class="action-btn btn-delete" onclick="deleteUser('${user.username}')">
-                                    Delete
-                                </button>
-                            ` : '<span style="color: var(--text-secondary);">Admin</span>'}
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading users:', error);
-                document.getElementById('users-table-body').innerHTML = '<tr><td colspan="8">Error loading users</td></tr>';
-            }
+            const res = await fetch('/api/admin/users');
+            const data = await res.json();
+            const users = data.users || [];
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = users.map(u => `
+                <tr>
+                    <td>${escapeHtml(u.username)}</td>
+                    <td>${escapeHtml(u.email || '')}</td>
+                    <td><span class="${u.role === 'admin' ? 'role-admin' : 'role-user'}">${u.role}</span></td>
+                    <td><span class="${u.is_active ? 'status-active' : 'status-inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>${u.created_at ? formatDate(u.created_at) : ''}</td>
+                    <td>${u.last_login ? formatDate(u.last_login) : 'Never'}</td>
+                    <td>${u.login_count || 0}</td>
+                    <td>
+                        ${u.username !== 'admin' ? `
+                        <button class="btn btn-warning" onclick="toggleUserStatus('${u.username}')">${u.is_active ? 'Ban' : 'Activate'}</button>
+                        <button class="btn btn-danger" onclick="deleteUser('${u.username}')">Delete</button>` : '<span style="color: var(--text-secondary);">Admin</span>'}
+                    </td>
+                </tr>`).join('');
+            document.getElementById('user-search').addEventListener('input', function() {
+                const q = this.value.toLowerCase();
+                Array.from(tbody.children).forEach(tr => {
+                    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+                });
+            });
         }
 
         async function toggleUserStatus(username) {
-            if (!confirm(`Are you sure you want to change ${username}'s status?`)) return;
-
-            try {
-                const response = await fetch(`/api/admin/users/${username}/toggle`, { method: 'POST' });
-                if (response.ok) {
-                    loadUsers(); // Reload users list
-                    alert('User status updated successfully');
-                } else {
-                    alert('Error updating user status');
-                }
-            } catch (error) {
-                console.error('Error toggling user status:', error);
-                alert('Error updating user status');
-            }
+            if (!confirm(`Change status for ${username}?`)) return;
+            const res = await fetch(`/api/admin/users/${username}/toggle`, { method: 'POST' });
+            if (res.ok) { alert('User status updated'); loadUsers(); } else { alert('Error updating status'); }
         }
-
         async function deleteUser(username) {
-            if (!confirm(`Are you sure you want to permanently delete user ${username}? This action cannot be undone!`)) return;
-
-            try {
-                const response = await fetch(`/api/admin/users/${username}/delete`, { method: 'DELETE' });
-                if (response.ok) {
-                    loadUsers(); // Reload users list
-                    alert('User deleted successfully');
-                } else {
-                    alert('Error deleting user');
-                }
-            } catch (error) {
-                console.error('Error deleting user:', error);
-                alert('Error deleting user');
-            }
+            if (!confirm(`Delete user ${username}? This cannot be undone.`)) return;
+            const res = await fetch(`/api/admin/users/${username}/delete`, { method: 'DELETE' });
+            if (res.ok) { alert('User deleted'); loadUsers(); } else { alert('Error deleting user'); }
         }
 
-        // Search functionality
-        document.getElementById('user-search').addEventListener('input', function() {
-            const query = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#users-table-body tr');
+        async function preloadFolders() {
+            try {
+                const res = await fetch('/api/folders');
+                if (!res.ok) return;
+                const data = await res.json();
+                const folders = data.folders || [];
+                const dl = document.getElementById('folderOptions');
+                dl.innerHTML = folders.map(f => `<option value="${escapeHtml(f.path)}"></option>`).join('');
+            } catch (e) { /* ignore */ }
+        }
 
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(query) ? '' : 'none';
-            });
-        });
+        function resetVideoFilters() {
+            document.getElementById('vid-search').value = '';
+            document.getElementById('vid-folder').value = '';
+            document.getElementById('vid-broken').checked = false;
+            loadVideos(1);
+        }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            loadSectionData('dashboard');
-        });
+        function toggleSelectAll(cb) {
+            const boxes = document.querySelectorAll('#videos-tbody input[type="checkbox"]');
+            boxes.forEach(b => { b.checked = cb.checked; toggleSelect(b, b.dataset.id); });
+            updateSelectedCount();
+        }
+        function toggleSelect(el, id) {
+            if (el.checked) selected.add(id); else selected.delete(id);
+            updateSelectedCount();
+        }
+        function updateSelectedCount() { document.getElementById('selected-count').textContent = `${selected.size} selected`; }
+        function getSelectedIdsCsv() { return Array.from(selected).join(','); }
+
+        async function loadVideos(page) {
+            if (page) currentPage = page;
+            const q = encodeURIComponent(document.getElementById('vid-search').value.trim());
+            const folder = encodeURIComponent(document.getElementById('vid-folder').value.trim());
+            const broken = document.getElementById('vid-broken').checked ? 'true' : '';
+            const url = `/api/admin/videos?page=${currentPage}&page_size=${pageSize}${q ? `&q=${q}`: ''}${folder ? `&folder=${folder}`: ''}${broken ? `&broken=true` : ''}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            const items = data.items || [];
+            totalItems = data.total || 0;
+            const tbody = document.getElementById('videos-tbody');
+            if (items.length === 0) { tbody.innerHTML = '<tr><td colspan="6">No videos found</td></tr>'; }
+            else {
+                tbody.innerHTML = items.map(v => `
+                    <tr>
+                        <td><input type="checkbox" data-id="${v.video_id}" onchange="toggleSelect(this, '${v.video_id}')"></td>
+                        <td><a href="/watch/${v.video_id}" target="_blank">${escapeHtml(v.title || '')}</a><div style="color:var(--text-secondary);font-size:0.8rem;">${escapeHtml(v.source_url || '')}</div></td>
+                        <td>${escapeHtml(v.folder_path || v.folder_name || '')}</td>
+                        <td>${v.views_count || 0}</td>
+                        <td>${formatDate(v.added_time)}</td>
+                        <td>${(v.tags || []).map(t => `<span class='tag'>${escapeHtml(t)}</span>`).join('')}</td>
+                    </tr>`).join('');
+            }
+            document.getElementById('page-info').textContent = `Page ${currentPage} • ${(items.length)} shown of ${totalItems}`;
+            selected.clear(); updateSelectedCount();
+        }
+        function prevPage() { if (currentPage > 1) loadVideos(currentPage - 1); }
+        function nextPage() { const maxPage = Math.ceil(totalItems / pageSize) || 1; if (currentPage < maxPage) loadVideos(currentPage + 1); }
+
+        async function bulkDelete() {
+            const ids = getSelectedIdsCsv(); if (!ids) return alert('No selection');
+            if (!confirm('Delete selected videos?')) return;
+            const body = new URLSearchParams(); body.append('video_ids', ids);
+            const res = await fetch('/api/admin/videos/bulk/delete', { method: 'POST', body });
+            if (res.ok) { alert('Deleted'); loadVideos(currentPage); } else { alert('Error'); }
+        }
+        async function bulkMove() {
+            const ids = getSelectedIdsCsv(); if (!ids) return alert('No selection');
+            const target = prompt('Enter target folder path (you can use suggestions from filters datalist)');
+            if (!target) return;
+            const body = new URLSearchParams(); body.append('video_ids', ids); body.append('new_folder_path', target);
+            const res = await fetch('/api/admin/videos/bulk/move', { method: 'POST', body });
+            if (res.ok) { alert('Moved'); loadVideos(currentPage); } else { alert('Error'); }
+        }
+        async function bulkCopy() {
+            const ids = getSelectedIdsCsv(); if (!ids) return alert('No selection');
+            const target = prompt('Enter target folder path');
+            if (!target) return;
+            const body = new URLSearchParams(); body.append('video_ids', ids); body.append('new_folder_path', target);
+            const res = await fetch('/api/admin/videos/bulk/copy', { method: 'POST', body });
+            if (res.ok) { alert('Copied'); loadVideos(currentPage); } else { alert('Error'); }
+        }
+        async function bulkTag(action) {
+            const ids = getSelectedIdsCsv(); if (!ids) return alert('No selection');
+            const tag = document.getElementById('tag-input').value.trim(); if (!tag) return alert('Enter a tag');
+            const body = new URLSearchParams(); body.append('video_ids', ids); body.append('action', action); body.append('tag', tag);
+            const res = await fetch('/api/admin/videos/bulk/tag', { method: 'POST', body });
+            if (res.ok) { alert('Tags updated'); loadVideos(currentPage); } else { alert('Error'); }
+        }
+
+        async function enqueueImports() {
+            const urls = document.getElementById('import-urls').value.trim(); if (!urls) return alert('Paste URLs');
+            const folder = document.getElementById('import-folder').value.trim(); if (!folder) return alert('Enter target folder');
+            const body = new URLSearchParams(); body.append('urls', urls); body.append('folder_path', folder);
+            const res = await fetch('/api/admin/import/queue', { method: 'POST', body });
+            if (res.ok) { alert('Enqueued'); document.getElementById('import-urls').value=''; loadQueue(); } else { alert('Error enqueuing'); }
+        }
+        async function loadQueue() {
+            const res = await fetch('/api/admin/import/queue');
+            const data = await res.json();
+            const items = (data.items || []).slice().sort((a,b)=> (a.created_at||'').localeCompare(b.created_at||''));
+            const tbody = document.getElementById('queue-tbody');
+            if (items.length === 0) { tbody.innerHTML = '<tr><td colspan="7">Queue empty</td></tr>'; return; }
+            tbody.innerHTML = items.map(it => `
+                <tr>
+                    <td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(it.url)}">${escapeHtml(it.url)}</td>
+                    <td>${escapeHtml(it.folder_path || '')}</td>
+                    <td><span class="status-pill status-${escapeHtml((it.status||'').toLowerCase())}">${escapeHtml(it.status || '')}</span></td>
+                    <td>${escapeHtml(it.requested_by || '')}</td>
+                    <td>${formatDate(it.created_at)}</td>
+                    <td>${formatDate(it.completed_at)}</td>
+                    <td>
+                        ${it.status === 'queued' ? `<button class="btn btn-warning" onclick="cancelQueue('${it.id}')">Cancel</button>` : ''}
+                        ${it.error ? `<span style='color:#dc3545' title='${escapeHtml(it.error)}'>Error</span>` : ''}
+                    </td>
+                </tr>`).join('');
+        }
+        async function cancelQueue(id) {
+            if (!confirm('Cancel this queued item?')) return;
+            const res = await fetch(`/api/admin/import/queue/${id}/cancel`, { method: 'POST' });
+            if (res.ok) { alert('Canceled'); loadQueue(); } else { alert('Error'); }
+        }
+
+        async function runBrokenCheck() {
+            const res = await fetch('/api/admin/check/broken');
+            const data = await res.json();
+            const items = data.items || [];
+            const tbody = document.getElementById('health-tbody');
+            if (items.length === 0) { tbody.innerHTML = '<tr><td colspan="4">No issues found</td></tr>'; return; }
+            tbody.innerHTML = items.map(x => {
+                const issues = [x.bad_thumb ? 'Thumbnail' : null, x.bad_src ? 'Source URL' : null].filter(Boolean).join(', ');
+                return `
+                    <tr>
+                        <td><input type="checkbox" data-id="${x.video_id}"></td>
+                        <td>${escapeHtml(x.video_id)}</td>
+                        <td>${escapeHtml(x.title || '')}</td>
+                        <td>${issues}</td>
+                    </tr>`;
+            }).join('');
+        }
+        function toggleHealthSelectAll(cb) {
+            document.querySelectorAll('#health-tbody input[type="checkbox"]').forEach(b => b.checked = cb.checked);
+        }
+        async function fixMetadata() {
+            const ids = Array.from(document.querySelectorAll('#health-tbody input[type="checkbox"]:checked')).map(x => x.dataset.id);
+            if (ids.length === 0) return alert('No selection');
+            const body = new URLSearchParams(); body.append('video_ids', ids.join(','));
+            const res = await fetch('/api/admin/fix/metadata', { method: 'POST', body });
+            if (res.ok) { alert('Fix triggered'); runBrokenCheck(); } else { alert('Error fixing'); }
+        }
+
+        // Utils
+        function escapeHtml(s) { return (s || '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+        function formatDate(ts) { if (!ts) return ''; const d = new Date(ts); return isNaN(d.getTime()) ? '' : d.toLocaleString(); }
+        function thumbUrl(v) { const p = v.thumbnail_path || ''; return p.includes('thumbnails') ? ('/' + p.replace(/^\/+/, '')) : `https://img.youtube.com/vi/${v.video_id}/hqdefault.jpg`; }
+
+        document.addEventListener('DOMContentLoaded', function() { loadSectionData('dashboard'); });
     </script>
 </body>
 </html>

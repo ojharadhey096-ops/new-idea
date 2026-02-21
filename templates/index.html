@@ -6,6 +6,24 @@
     <title>VideoHub - YouTube Style Video Library</title>
     <link rel="stylesheet" href="/static/css/youtube.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Modern enhancements and animations */
+        :root {
+            --glass: rgba(255,255,255,0.06);
+        }
+        header { backdrop-filter: saturate(160%) blur(10px); border-bottom: 1px solid var(--border-color); }
+        .video-card { transition: transform .2s ease, box-shadow .2s ease; position: relative; overflow: hidden; }
+        .video-card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,0.25); }
+        .video-thumbnail img { transition: transform .35s ease; }
+        .video-card:hover .video-thumbnail img { transform: scale(1.05); }
+        .videos-grid { animation: fadeIn .25s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: translateY(0);} }
+        .section-title { display:flex; align-items:center; gap:.5rem; }
+        .add-video-section { background: linear-gradient(135deg, rgba(124,92,255,0.08), rgba(0,230,255,0.06)); border: 1px solid var(--border-color); border-radius: 10px; padding: 1rem; }
+        .form-group input, .form-group select { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-primary); }
+        .badge { background: var(--glass); border: 1px solid var(--border-color); border-radius: 999px; padding: 0.15rem 0.5rem; font-size: .75rem; }
+        .folder-chip { background: rgba(255,255,255,0.06); border:1px solid var(--border-color); border-radius:999px; padding: .2rem .6rem; font-size:.8rem; }
+    </style>
 </head>
 <body>
     <!-- Header -->
@@ -103,8 +121,8 @@
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
                         <div class="form-group">
-                            <label for="newFolderInput">Or Create New Folder <span style="color: var(--primary-color);">*</span></label>
-                            <input type="text" id="newFolderInput" name="new_folder" placeholder="Enter folder name (e.g., Physics)" required>
+                            <label for="newFolderInput">Or Create New Folder</label>
+                            <input type="text" id="newFolderInput" name="new_folder" placeholder="Enter folder name (e.g., Physics)">
                         </div>
                         <div style="display: flex; gap: 1rem; align-items: flex-end;">
                             <button type="submit" class="btn-primary" style="flex: 1;">
@@ -169,15 +187,13 @@
                     <i class="fas fa-folder-open"></i> Your Folders
                 </h2>
                 <div class="folders-grid" id="foldersGrid">
-                    {% for folder_name, folder_data in folder_hierarchy.items() %}
-                        <a href="/folder/{{ folder }}" class="folder-card">
+                    {% for name, data in folder_hierarchy.items() %}
+                        <a href="/folder/{{ name }}" class="folder-card">
                             <div>
-                                <div class="folder-icon">
-                                    <i class="fas fa-folder"></i>
-                                </div>
-                                <h3>{{ folder }}</h3>
+                                <div class="folder-icon"><i class="fas fa-folder"></i></div>
+                                <h3>{{ name }}</h3>
                             </div>
-                            <p><i class="fas fa-play-circle"></i> {{ count }} video{{ 's' if count != 1 else '' }}</p>
+                            <p><i class="fas fa-play-circle"></i> {{ data.count }} video{{ 's' if data.count != 1 else '' }}</p>
                         </a>
                     {% endfor %}
                 </div>
@@ -297,11 +313,18 @@
             })
             .then(response => response.json())
             .then(data => {
-                showSuccess('Video added successfully! Processing in background...');
+                if (data && data.message) {
+                    showSuccess('✅ ' + data.message + ' Processing in background...');
+                } else if (data && data.error) {
+                    showError('❌ ' + data.error);
+                    return;
+                } else {
+                    showSuccess('Processing in background...');
+                }
                 clearForm();
-                setTimeout(loadFolders, 2000);
-                // Reload page after 3 seconds to show new video
-                setTimeout(() => location.reload(), 3000);
+                setTimeout(loadFolders, 1500);
+                // Soft refresh: re-fetch newest cards without full reload
+                setTimeout(() => window.location.reload(), 2500);
             })
             .catch(error => {
                 showError('Error adding video: ' + error);

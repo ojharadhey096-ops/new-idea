@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome • VideoHub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #0b0f1a;
+      --bg-2: #0d1220;
+      --text: #eaf0ff;
+      --muted: #98a3c7;
+      --primary: #7c5cff;
+      --accent: #00e6ff;
+      --pink: #ff4ecd;
+      --card: rgba(255,255,255,0.06);
+      --glass: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.15);
+      --shadow: 0 10px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+      color: var(--text);
+      background: radial-gradient(1200px 800px at 10% -10%, #1a1f35 0%, transparent 60%),
+                  radial-gradient(1000px 900px at 110% 10%, #11192b 0%, transparent 60%),
+                  linear-gradient(0deg, var(--bg), var(--bg-2));
+      overflow-x: hidden;
+    }
+
+    /* Animated Background Blobs */
+    .blob {
+      position: fixed;
+      width: 40vmax; height: 40vmax;
+      filter: blur(60px);
+      opacity: 0.35;
+      z-index: -2;
+      transform: translateZ(0);
+      animation: float 22s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .blob.one { background: radial-gradient(circle at 30% 30%, var(--primary), transparent 60%); top: -10vmax; left: -10vmax; animation-delay: 0s; }
+    .blob.two { background: radial-gradient(circle at 70% 70%, var(--accent), transparent 60%); bottom: -12vmax; right: -5vmax; animation-delay: 4s; }
+    .blob.three { background: radial-gradient(circle at 50% 50%, var(--pink), transparent 60%); top: 20vh; right: 35vw; animation-delay: 8s; }
+    @keyframes float { 0%,100%{ transform: translate(0,0) scale(1);} 50%{ transform: translate(3vmax,-2vmax) scale(1.08);} }
+
+    /* Floating Shapes */
+    .shape {
+      position: absolute;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255,255,255,0.35), rgba(255,255,255,0.05));
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.2);
+      animation: drift 14s linear infinite;
+      mix-blend-mode: screen;
+    }
+    .shape.square { border-radius: 6px; }
+    .shape.tri { width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 14px solid rgba(255,255,255,0.35); background: transparent; }
+    @keyframes drift { 0% { transform: translateY(0) rotate(0deg); opacity: 0; } 10%{opacity: .8;} 50% { transform: translateY(-60vh) rotate(180deg);} 90%{opacity: .4;} 100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; } }
+
+    /* Navbar */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 32px; position: sticky; top: 0; z-index: 10;
+      background: linear-gradient(to bottom, rgba(11,15,26,0.9), rgba(11,15,26,0.35), rgba(11,15,26,0));
+      backdrop-filter: saturate(160%) blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: .5px; }
+    .brand i { color: var(--primary); font-size: 1.2rem; }
+    .brand span { font-size: 1.05rem; }
+    .nav .links a {
+      color: var(--muted); text-decoration: none; margin: 0 10px; font-weight: 600; font-size: .95rem;
+    }
+    .nav .actions a, .cta {
+      text-decoration: none; font-weight: 700; letter-spacing: .3px; padding: 10px 16px; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px;
+      box-shadow: var(--shadow);
+    }
+    .btn-outline { color: var(--accent); border: 1px solid rgba(0,230,255,0.45); background: linear-gradient(180deg, rgba(0,230,255,0.12), rgba(0,230,255,0.05)); }
+    .btn-primary { color: #0c0f1a; background: linear-gradient(135deg, var(--accent), var(--primary)); border: 1px solid rgba(255,255,255,0.15); }
+
+    /* Hero */
+    .hero {
+      display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 24px; align-items: center; padding: 56px 32px 20px; max-width: 1200px; margin: 0 auto;
+    }
+    .headline { font-size: clamp(32px, 5vw, 56px); line-height: 1.05; font-weight: 700; }
+    .gradient-text { background: linear-gradient(135deg, #fff, #c7cfff 40%, var(--accent) 60%, var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .sub { margin-top: 10px; color: var(--muted); font-weight: 400; font-size: clamp(14px, 2vw, 18px); }
+    .cta-row { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+
+    /* Hero Card (mock player) */
+    .mock-card {
+      position: relative; border: 1px solid var(--border); border-radius: 18px; overflow: hidden; background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      box-shadow: var(--shadow);
+      transform: translateZ(0);
+    }
+    .mock-video { width: 100%; height: 330px; background: url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1820&auto=format&fit=crop') center/cover no-repeat; filter: saturate(105%) contrast(95%); }
+    .glow { position:absolute; inset: -40%; background: radial-gradient(closest-side, rgba(124,92,255,0.18), transparent 70%); filter: blur(30px); pointer-events: none; animation: pulse 6s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{ opacity:.7; transform: scale(1);} 50%{ opacity:1; transform: scale(1.12);} }
+    .mock-controls { display:flex; align-items:center; justify-content: space-between; padding: 10px 14px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.25); }
+    .pill { background: rgba(255,255,255,0.06); border: 1px solid var(--border); padding: 6px 10px; border-radius: 999px; font-size: 12px; color: var(--muted); }
+
+    /* Scroller */
+    .marquee { position: relative; overflow: hidden; border-top: 1px solid rgba(255,255,255,0.06); border-bottom: 1px solid rgba(255,255,255,0.06); margin: 18px 0 28px; }
+    .marquee-track { display:flex; gap: 28px; padding: 16px 0; animation: marquee 28s linear infinite; }
+    .badge { padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: 13px; color: #0b0f1a; background: linear-gradient(135deg, #fff, #bfeaff); border: 1px solid rgba(0,0,0,0.08); white-space: nowrap; }
+    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+    /* Feature Grid */
+    .features { max-width: 1200px; margin: 0 auto; padding: 0 32px 56px; }
+    .grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+    .card { padding: 18px; border-radius: 16px; border: 1px solid var(--border); background: var(--glass); box-shadow: var(--shadow); position: relative; overflow: hidden; }
+    .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .92rem; }
+    .card .icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 10px; background: linear-gradient(135deg, rgba(124,92,255,0.2), rgba(0,230,255,0.15)); border: 1px solid var(--border); }
+    .card:hover { transform: translateY(-3px); transition: .3s ease; border-color: rgba(255,255,255,0.25); }
+    .spark { position: absolute; width: 160px; height: 160px; right: -60px; bottom: -60px; background: radial-gradient(closest-side, rgba(255,255,255,0.08), transparent 60%); filter: blur(10px); opacity: 0; transition: .3s; }
+    .card:hover .spark { opacity: 1; transform: scale(1.05); }
+
+    /* Footer */
+    footer { text-align: center; padding: 28px; color: var(--muted); border-top: 1px solid rgba(255,255,255,0.06); background: rgba(0,0,0,0.2); }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* Responsive */
+    @media (max-width: 980px) { .hero { grid-template-columns: 1fr; } .mock-video{ height: 260px; } .grid{ grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px) { .grid{ grid-template-columns: 1fr; } .nav{ padding: 16px 18px; } .hero{ padding: 32px 18px; } .features{ padding: 0 18px 48px; } }
+  </style>
+</head>
+<body>
+  <!-- Background Blobs -->
+  <div class="blob one"></div>
+  <div class="blob two"></div>
+  <div class="blob three"></div>
+
+  <!-- Floating Shapes (generated by JS as well) -->
+  <div id="shapes"></div>
+
+  <!-- Nav -->
+  <div class="nav">
+    <div class="brand"><i class="fas fa-play-circle"></i><span>VideoHub</span></div>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#showcase">Showcase</a>
+      <a href="#get-started">Get Started</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </div>
+    <div class="actions">
+      <a href="/login" class="btn-outline"><i class="fas fa-sign-in-alt"></i> Login</a>
+      <a href="/register" class="btn-primary"><i class="fas fa-user-plus"></i> Register</a>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero" id="showcase">
+    <div>
+      <div class="headline">Your Personal <span class="gradient-text">Video Universe</span></div>
+      <div class="sub">Organize, import playlists, and stream smarter. A clean YouTube-style library with folders, tags, and powerful admin tools — wrapped in a blazing, modern UI.</div>
+      <div class="cta-row">
+        <a class="cta btn-primary" href="/login"><i class="fas fa-rocket"></i> Enter App</a>
+        <a class="cta btn-outline" href="/register"><i class="fas fa-user-plus"></i> Create Account</a>
+      </div>
+      <div class="marquee">
+        <div class="marquee-track" aria-hidden="true">
+          <span class="badge"><i class="fas fa-bolt"></i> Playlist Import</span>
+          <span class="badge"><i class="fas fa-layer-group"></i> Folder Hierarchy</span>
+          <span class="badge"><i class="fas fa-tags"></i> Tagging</span>
+          <span class="badge"><i class="fas fa-magic"></i> Admin Tools</span>
+          <span class="badge"><i class="fas fa-heart"></i> Clean UI</span>
+          <span class="badge"><i class="fas fa-shield-alt"></i> Secure Auth</span>
+          <span class="badge"><i class="fas fa-chart-line"></i> Analytics</span>
+          <!-- repeat for seamless loop -->
+          <span class="badge"><i class="fas fa-bolt"></i> Playlist Import</span>
+          <span class="badge"><i class="fas fa-layer-group"></i> Folder Hierarchy</span>
+          <span class="badge"><i class="fas fa-tags"></i> Tagging</span>
+          <span class="badge"><i class="fas fa-magic"></i> Admin Tools</span>
+          <span class="badge"><i class="fas fa-heart"></i> Clean UI</span>
+          <span class="badge"><i class="fas fa-shield-alt"></i> Secure Auth</span>
+          <span class="badge"><i class="fas fa-chart-line"></i> Analytics</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mock-card" aria-label="Preview">
+      <div class="glow"></div>
+      <div class="mock-video"></div>
+      <div class="mock-controls">
+        <div class="pill"><i class="fas fa-clock"></i> Resume where you left</div>
+        <div style="display:flex; gap: 8px;">
+          <div class="pill"><i class="fas fa-folder-open"></i> Organized</div>
+          <div class="pill"><i class="fas fa-wand-magic-sparkles"></i> Smart</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features" id="features">
+    <div class="grid">
+      <div class="card">
+        <div class="icon"><i class="fas fa-list"></i></div>
+        <h3>Playlists & Imports</h3>
+        <p>Paste a URL and let the system fetch titles and thumbnails. Import full playlists in one go.</p>
+        <div class="spark"></div>
+      </div>
+      <div class="card">
+        <div class="icon"><i class="fas fa-sitemap"></i></div>
+        <h3>Folders & Tags</h3>
+        <p>Organize with nested folders and lightweight tags. Find anything with blazing search.</p>
+        <div class="spark"></div>
+      </div>
+      <div class="card">
+        <div class="icon"><i class="fas fa-user-shield"></i></div>
+        <h3>Admin Power</h3>
+        <p>Bulk operations, import queue, health checks, and stats. Control at your fingertips.</p>
+        <div class="spark"></div>
+      </div>
+      <div class="card">
+        <div class="icon"><i class="fas fa-bolt"></i></div>
+        <h3>Fast & Light</h3>
+        <p>Optimized assets and slick animations. Enjoy a responsive, modern experience.</p>
+        <div class="spark"></div>
+      </div>
+      <div class="card">
+        <div class="icon"><i class="fas fa-shield-halved"></i></div>
+        <h3>Secure by Default</h3>
+        <p>Session-based auth, role checks, and safe server endpoints. Ready for real users.</p>
+        <div class="spark"></div>
+      </div>
+      <div class="card">
+        <div class="icon"><i class="fas fa-paint-brush"></i></div>
+        <h3>Beautiful UI</h3>
+        <p>Glassmorphism, gradients, and motion. A design that feels premium and polished.</p>
+        <div class="spark"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer id="get-started">
+    <div>Ready to explore? <a href="/login">Sign in</a> or <a href="/register">Create an account</a>.</div>
+  </footer>
+
+  <script>
+    // Floating shapes generator
+    (function generateShapes(){
+      const c = document.getElementById('shapes');
+      const types = ['dot','square','tri'];
+      const total = 26;
+      for (let i=0;i<total;i++){
+        const t = types[Math.floor(Math.random()*types.length)];
+        const el = document.createElement('div');
+        el.className = 'shape ' + (t==='dot'?'':t);
+        reset(el, true);
+        c.appendChild(el);
+        el.addEventListener('animationiteration', ()=> reset(el));
+      }
+      function reset(el, initial){
+        el.style.left = (Math.random()*100) + 'vw';
+        el.style.bottom = (initial? (Math.random()*100) : -10) + 'vh';
+        const dur = 12 + Math.random()*12; // 12-24s
+        el.style.animationDuration = dur + 's';
+        el.style.opacity = 0.2 + Math.random()*0.8;
+        const size = 6 + Math.random()*16; // 6-22px
+        if (!el.classList.contains('tri')){ el.style.width = size+'px'; el.style.height = size+'px'; }
+      }
+    })();
+
+    // Parallax mouse move for hero
+    (function parallax(){
+      const blobs = document.querySelectorAll('.blob');
+      const card = document.querySelector('.mock-card');
+      window.addEventListener('mousemove', (e)=>{
+        const x = (e.clientX / window.innerWidth) - 0.5;
+        const y = (e.clientY / window.innerHeight) - 0.5;
+        blobs.forEach((b, i)=>{
+          const depth = (i+1) * 8;
+          b.style.transform = `translate(${x*depth}vmax, ${y*depth}vmax)`;
+        });
+        const tiltX = -y * 6, tiltY = x * 8;
+        card.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+      });
+      window.addEventListener('mouseleave', ()=>{ card.style.transform = 'rotateX(0) rotateY(0)'; });
+    })();
+
+    // Prefer-reduced-motion: pause marquee
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (mq.matches) {
+      document.querySelectorAll('.marquee-track').forEach(el => el.style.animationPlayState = 'paused');
+    }
+  </script>
+</body>
+</html>
