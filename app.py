@@ -594,7 +594,15 @@ async def add_video(
     if not actual_folder:
         return {"error": "Folder path is required"}, 400
 
-    background_tasks.add_task(process_video, url, actual_folder, username)
+    # Run process_video in background
+    async def process_and_notify():
+        success, result = await process_video(url, actual_folder, username)
+        if success:
+            print(f"Successfully processed {result} video(s)")
+        else:
+            print(f"Processing failed: {result}")
+    
+    background_tasks.add_task(process_and_notify)
     return {"message": "Video processing started"}
 
 @app.get("/api/folders")
@@ -857,6 +865,7 @@ async def process_video(url: str, folder_name: str, username: str = None):
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
         except Exception as e:
+            print(f"yt-dlp extraction error: {e}")
             info = None
 
         # If playlist
@@ -890,7 +899,7 @@ async def process_video(url: str, folder_name: str, username: str = None):
             except Exception:
                 pass
             print(f"Playlist processed: {added} new video(s) added")
-            return
+            return True, added
 
         # Otherwise, assume single video
         video_id = None
@@ -902,7 +911,7 @@ async def process_video(url: str, folder_name: str, username: str = None):
             if add_video_to_db(db, video_id, url, title=title, duration=duration):
                 save_db(db)
                 print(f"Video added: {title or video_id}")
-                return
+                return True, 1
         
         # Fallback: regex extraction from URL
         patterns = [
@@ -918,14 +927,21 @@ async def process_video(url: str, folder_name: str, username: str = None):
                 video_id = m.group(1)
                 break
         if not video_id:
-            print(f"Invalid or unsupported YouTube URL: {url}")
-            return
+            error_msg = f"Invalid or unsupported YouTube URL: {url}"
+            print(error_msg)
+            return False, error_msg
 
         if add_video_to_db(db, video_id, url):
             save_db(db)
             print(f"Video added: {video_id}")
+            return True, 1
+        else:
+            return False, "Video already exists"
+            
     except Exception as e:
-        print(f"Error processing video: {e}")
+        error_msg = f"Error processing video: {str(e)}"
+        print(error_msg)
+        return False, error_msg
 
 @app.post("/api/delete_folder")
 async def delete_folder(folder_name: str = Form(...), auth_token: str = Cookie(None)):

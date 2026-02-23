@@ -96,5 +96,20 @@
     "file_size": 0,
     "added_time": "2026-02-21T19:22:10.501187",
     "views_count": 0
+  },
+  "dQw4w9WgXcQ": {
+    "video_id": "dQw4w9WgXcQ",
+    "yt_id": "dQw4w9WgXcQ",
+    "user_id": "testuser",
+    "title": "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)",
+    "source_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "folder_path": "TestFolder",
+    "folder_name": "TestFolder",
+    "embed_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "thumbnail_path": "static/thumbnails/dQw4w9WgXcQ.jpg",
+    "duration": 213,
+    "file_size": 0,
+    "added_time": "2026-02-23T17:07:34.996206",
+    "views_count": 0
   }
 }

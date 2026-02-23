@@ -301,7 +301,12 @@
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data && data.message) {
                     showSuccess('✅ ' + data.message + ' Processing in background...');
@@ -317,7 +322,8 @@
                 setTimeout(() => window.location.reload(), 2500);
             })
             .catch(error => {
-                showError('Error adding video: ' + error);
+                console.error('Error adding video:', error);
+                showError('Error adding video: ' + error.message);
             });
         }
 
