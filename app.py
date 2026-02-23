@@ -25,6 +25,22 @@ if os.path.exists("videos"):
 
 templates = Jinja2Templates(directory="templates")
 
+# Home page - redirect based on authentication
+@app.get("/", response_class=HTMLResponse)
+async def home_page(request: Request, auth_token: str = Cookie(None)):
+    if auth_token:
+        try:
+            from auth import verify_token, load_users
+            username = verify_token(auth_token)
+            users = load_users()
+            if username in users:
+                # Redirect to dashboard if authenticated
+                return RedirectResponse("/index", status_code=302)
+        except Exception:
+            pass
+    # Redirect to welcome page if not authenticated or token invalid
+    return RedirectResponse("/welcome", status_code=302)
+
 # Public landing page (modern animated)
 @app.get("/welcome", response_class=HTMLResponse)
 async def welcome_page(request: Request):
@@ -357,9 +373,15 @@ async def register(
 
 @app.post("/logout")
 async def logout(response: Response):
-    response = RedirectResponse("/login", status_code=302)
-    response.delete_cookie("auth_token")
+    # Create response with redirect to home page
+    response = RedirectResponse("/", status_code=302)
+    response.delete_cookie("auth_token", path="/")
     return response
+
+# Add GET logout route for browser navigation
+@app.get("/logout")
+async def get_logout(response: Response):
+    return await logout(response)
 
 def load_db():
     try:
@@ -455,8 +477,8 @@ def build_user_folder_hierarchy(username):
 
     return hierarchy
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request, auth_token: str = Cookie(None)):
+@app.get("/index", response_class=HTMLResponse)
+async def index_page(request: Request, auth_token: str = Cookie(None)):
     # Check if user is authenticated
     if not auth_token:
         return RedirectResponse("/login", status_code=302)

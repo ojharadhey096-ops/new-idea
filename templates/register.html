@@ -6,6 +6,20 @@
     <title>Register - VideoHub</title>
     <link rel="stylesheet" href="/static/css/youtube.css">
     <style>
+        .nav-links {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin: 0 1rem;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+        .nav-links a:hover {
+            color: var(--primary-color);
+        }
         .auth-container {
             max-width: 400px;
             margin: 50px auto;
@@ -106,6 +120,11 @@
 </head>
 <body>
     <div class="auth-container">
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/about">About</a>
+            <a href="/contact">Contact</a>
+        </div>
         <div class="auth-header">
             <h1>📝 Register for VideoHub</h1>
             <p>Create your account to start building your video library</p>
