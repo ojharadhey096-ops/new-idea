@@ -14,11 +14,6 @@ import aiofiles
 import shutil
 from auth import get_current_user, authenticate_user, register_user
 import asyncio
-try:
-    from telegram_client import fetch_videos_from_channel
-    TELEGRAM_AVAILABLE = True
-except ImportError:
-    TELEGRAM_AVAILABLE = False
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -772,77 +767,6 @@ async def rename_folder(old_name: str = Form(...), new_name: str = Form(...), au
     return {"message": f"Folder renamed from {old_name} to {new_name}"}
 
 
-
-@app.get("/api/telegram/channels")
-async def get_telegram_channels():
-    """Get list of configured Telegram channels"""
-    if not TELEGRAM_AVAILABLE:
-        return {"error": "Telegram client not available", "channels": []}
-    
-    import config
-    channels = config.CHANNELS or []
-    return {"channels": channels}
-
-@app.get("/api/telegram/sync/{channel}")
-async def sync_telegram_channel(channel: str, background_tasks: BackgroundTasks):
-    """Sync videos from a Telegram channel"""
-    if not TELEGRAM_AVAILABLE:
-        raise HTTPException(status_code=400, detail="Telegram client not available")
-    
-    try:
-        # Queue background task
-        background_tasks.add_task(fetch_and_store_telegram_videos, channel)
-        return {"message": f"Syncing channel: {channel}"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.get("/api/telegram/videos")
-async def get_telegram_videos():
-    """Get all Telegram videos from cache"""
-    try:
-        import config
-        cache_file = config.VIDEO_CACHE_FILE
-        if os.path.exists(cache_file):
-            with open(cache_file, 'r') as f:
-                return json.load(f)
-    except:
-        pass
-    return {}
-
-async def fetch_and_store_telegram_videos(channel: str):
-    """Background task to fetch and store Telegram videos"""
-    if not TELEGRAM_AVAILABLE:
-        return
-    
-    try:
-        videos = await fetch_videos_from_channel(channel)
-        db = load_db()
-        
-        for video in videos:
-            unique_id = video.get('unique_video_id')
-            if unique_id and unique_id not in db:
-                # Convert Telegram video to database format
-                db[unique_id] = {
-                    'video_id': unique_id,
-                    'title': video.get('title', 'Telegram Video'),
-                    'source_url': f"/api/telegram/download/{unique_id}",
-                    'folder_name': f"📱 {video.get('channel_name', 'Telegram')}",
-                    'embed_url': f"/watch/{unique_id}",
-                    'thumbnail_path': video.get('thumbnail_path', ''),
-                    'duration': video.get('duration', 0),
-                    'file_size': video.get('file_size', 0),
-                    'added_time': datetime.now().isoformat(),
-                    'views_count': 0,
-                    'source_type': 'telegram',
-                    'file_id': video.get('file_id', ''),
-                    'message_id': video.get('message_id'),
-                    'channel_id': video.get('channel_id')
-                }
-        
-        save_db(db)
-        print(f"Synced {len(videos)} videos from {channel}")
-    except Exception as e:
-        print(f"Error syncing Telegram channel: {e}")
 
 async def process_video(url: str, folder_name: str, username: str = None):
     """
