@@ -475,22 +475,7 @@
 
         function logout() {
             if (confirm('Are you sure you want to logout?')) {
-                fetch('/logout', { 
-                    method: 'POST',
-                    credentials: 'same-origin'
-                })
-                .then(response => {
-                    if (response.ok) {
-                        window.location.href = '/';
-                    } else {
-                        console.error('Logout failed');
-                        window.location.href = '/login';
-                    }
-                })
-                .catch(error => {
-                    console.error('Logout error:', error);
-                    window.location.href = '/login';
-                });
+                window.location.href = '/logout';
             }
         }
 

@@ -28,12 +28,12 @@ templates = Jinja2Templates(directory="templates")
 # Home page - redirect based on authentication
 @app.get("/", response_class=HTMLResponse)
 async def home_page(request: Request, auth_token: str = Cookie(None)):
-    if auth_token:
+    if auth_token and auth_token.strip() not in ("", "\"\""):
         try:
             from auth import verify_token, load_users
             username = verify_token(auth_token)
             users = load_users()
-            if username in users:
+            if username and username in users:
                 # Redirect to dashboard if authenticated
                 return RedirectResponse("/index", status_code=302)
         except Exception:
