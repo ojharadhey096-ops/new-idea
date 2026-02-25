@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+test_index.py
+static/thumbnails/*.jpg
+subscriptions.json
+
