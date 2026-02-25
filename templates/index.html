@@ -104,6 +104,84 @@
 
         <!-- Main Content -->
         <main>
+            <!-- Continue Watching Section -->
+            {% if current_user.watch_history %}
+            <section>
+                <h2 class="section-title">
+                    <i class="fas fa-history"></i> Continue Watching
+                </h2>
+                <div class="videos-grid" id="continueWatchingGrid">
+                    {% for item in current_user.watch_history[:6] %}
+                        {% set found = False %}
+                        {% for v in videos %}
+                            {% if v.video_id == item.video_id %}
+                                {% set found = True %}
+                                {% set video = v %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if found %}
+                            <a href="/watch/{{ video.video_id }}" class="video-card">
+                                <div class="video-thumbnail">
+                                    <img src="{% if 'thumbnails' in video.thumbnail_path %}{{ '/' + video.thumbnail_path }}{% else %}https://img.youtube.com/vi/{{ video.video_id }}/hqdefault.jpg{% endif %}" alt="{{ video.title }}" onerror="this.src='https://via.placeholder.com/300x180?text=No+Image'">
+                                </div>
+                                <div class="video-info">
+                                    <div class="video-title">{{ video.title }}</div>
+                                    <div class="video-meta">
+                                        <span class="video-views">
+                                            <i class="fas fa-eye"></i>
+                                            {{ video.views_count }} views
+                                        </span>
+                                        <span style="background: rgba(255, 0, 0, 0.2); padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem;">
+                                            {{ video.folder_name }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
+            <!-- Liked Videos Section -->
+            {% if current_user.liked_videos %}
+            <section style="margin-top: 2rem;">
+                <h2 class="section-title">
+                    <i class="fas fa-heart"></i> Liked Videos
+                </h2>
+                <div class="videos-grid" id="likedVideosGrid">
+                    {% for item in current_user.liked_videos[:6] %}
+                        {% set found = False %}
+                        {% for v in videos %}
+                            {% if v.video_id == item.video_id %}
+                                {% set found = True %}
+                                {% set video = v %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if found %}
+                            <a href="/watch/{{ video.video_id }}" class="video-card">
+                                <div class="video-thumbnail">
+                                    <img src="{% if 'thumbnails' in video.thumbnail_path %}{{ '/' + video.thumbnail_path }}{% else %}https://img.youtube.com/vi/{{ video.video_id }}/hqdefault.jpg{% endif %}" alt="{{ video.title }}" onerror="this.src='https://via.placeholder.com/300x180?text=No+Image'">
+                                </div>
+                                <div class="video-info">
+                                    <div class="video-title">{{ video.title }}</div>
+                                    <div class="video-meta">
+                                        <span class="video-views">
+                                            <i class="fas fa-eye"></i>
+                                            {{ video.views_count }} views
+                                        </span>
+                                        <span style="background: rgba(255, 0, 0, 0.2); padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem;">
+                                            {{ video.folder_name }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+
             <!-- Add Video Section -->
             <section class="add-video-section">
                 <h2><i class="fas fa-cloud-upload-alt"></i> Add New Video</h2>
@@ -115,7 +193,7 @@
                         </div>
                         <div class="form-group">
                             <label for="folderSelect">Select Folder (Optional)</label>
-                            <select id="folderSelect" name="folder_name">
+                            <select id="folderSelect" name="folder_path">
                                 <option value="">Choose existing folder...</option>
                             </select>
                         </div>
@@ -136,7 +214,6 @@
                     </div>
                 </form>
             </section>
-
 
             <section>
                 <h2 class="section-title">

@@ -90,7 +90,9 @@ def register_user(username: str, email: str, password: str):
         "is_active": False,  # Require admin approval before login
         "role": "user",
         "last_login": None,
-        "login_count": 0
+        "login_count": 0,
+        "watch_history": [],
+        "liked_videos": []
     }
 
     save_users(users)

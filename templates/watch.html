@@ -90,6 +90,17 @@
             box-shadow: 0 4px 12px rgba(255, 153, 0, 0.3);
         }
 
+        .btn-like {
+            background: #ff0000;
+            color: white;
+        }
+
+        .btn-like:hover {
+            background: #cc0000;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+        }
+
         .video-details {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
@@ -198,7 +209,11 @@
                         <i class="fab fa-youtube"></i> Full YouTube
                     </button>
                     <button class="btn-vlc" onclick="openVLC()">
-                        <i class="fas fa-video"></i> VLC mein kholen
+                        <i class="fas fa-play"></i> Play in VLC
+                    </button>
+                    <button class="btn-like" id="likeButton" onclick="toggleLike()">
+                        <i id="likeIcon" class="{% if video.video_id in [v.video_id for v in current_user.liked_videos] %}fas{% else %}far{% endif %} fa-heart"></i>
+                        <span id="likeText">{% if video.video_id in [v.video_id for v in current_user.liked_videos] %}Liked{% else %}Like{% endif %}</span>
                     </button>
                     <button class="btn-secondary" onclick="copyVideo('{{ video.video_id }}')" style="background: rgba(0, 123, 255, 0.2); border: 1px solid #007bff; color: #007bff;">
                         <i class="fas fa-copy"></i> Copy
@@ -395,6 +410,45 @@
             }, 3000);
         }
 
+        async function toggleLike() {
+            try {
+                const formData = new FormData();
+                formData.append('video_id', videoId);
+
+                const response = await fetch('/toggle_like', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const icon = document.getElementById('likeIcon');
+                    const text = document.getElementById('likeText');
+                    if (data.get && data.get('liked') !== undefined) {
+                        // Some handlers may return dict-like responses; guard.
+                    }
+                    // Prefer explicit boolean if provided
+                    const liked = data.liked === true || data.liked === 'true';
+                    if (liked) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        text.textContent = 'Liked';
+                    } else {
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        text.textContent = 'Like';
+                    }
+                } else {
+                    alert('Error toggling like: ' + (data.detail || JSON.stringify(data)));
+                }
+            } catch (error) {
+                console.error('Error toggling like:', error);
+                alert('Could not toggle like.');
+            }
+        }
+
         async function copyVideo(videoId) {
             const newFolder = prompt('Enter folder path to copy video to (e.g., "Physics" or "Math/Algebra"):');
             if (!newFolder || !newFolder.trim()) return;
@@ -406,7 +460,8 @@
 
                 const response = await fetch('/api/copy_video', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'same-origin'
                 });
 
                 const data = await response.json();
@@ -437,7 +492,8 @@
 
                 const response = await fetch('/api/move_video', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'same-origin'
                 });
 
                 const data = await response.json();
@@ -465,7 +521,8 @@
 
                 const response = await fetch('/api/delete_video', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'same-origin'
                 });
 
                 const data = await response.json();
@@ -479,6 +536,48 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error deleting video: ' + error.message);
+            }
+        }
+
+        async function toggleLike() {
+            const button = document.getElementById('likeButton');
+            const icon = document.getElementById('likeIcon');
+            const text = document.getElementById('likeText');
+
+            // Disable button while processing
+            button.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('video_id', videoId);
+
+                const response = await fetch('/toggle_like', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.liked) {
+                        // Video is now liked
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        text.textContent = 'Liked';
+                    } else {
+                        // Video is now unliked
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        text.textContent = 'Like';
+                    }
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to toggle like'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error toggling like: ' + error.message);
+            } finally {
+                button.disabled = false;
             }
         }
 

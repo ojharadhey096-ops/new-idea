@@ -371,6 +371,55 @@ async def register(
             "error": e.detail
         })
 
+@app.post("/toggle_like")
+async def toggle_like(video_id: str = Form(...), auth_token: str = Cookie(None)):
+    # Check authentication
+    if not auth_token:
+        return {"error": "Authentication required"}, 401
+
+    try:
+        from auth import verify_token, load_users, save_users
+        username = verify_token(auth_token)
+        users = load_users()
+        if username not in users:
+            return {"error": "User not found"}, 401
+    except Exception:
+        return {"error": "Invalid authentication"}, 401
+
+    # Load video details
+    db = load_db()
+    video = db.get(video_id)
+    if not video:
+        return {"error": "Video not found"}, 404
+
+    # Check if video belongs to user
+    if video.get('user_id') != username:
+        return {"error": "Access denied"}, 403
+
+    # Toggle like
+    if 'liked_videos' not in users[username]:
+        users[username]['liked_videos'] = []
+    
+    # Check if video is already liked
+    video_index = next((i for i, v in enumerate(users[username]['liked_videos']) if v['video_id'] == video_id), -1)
+    
+    if video_index != -1:
+        # Remove from liked videos
+        del users[username]['liked_videos'][video_index]
+        is_liked = False
+    else:
+        # Add to liked videos
+        users[username]['liked_videos'].append({
+            'video_id': video_id,
+            'title': video['title'],
+            'thumbnail_path': video['thumbnail_path'],
+            'liked_at': datetime.now().isoformat()
+        })
+        is_liked = True
+    
+    save_users(users)
+    return {"liked": is_liked}
+
 @app.post("/logout")
 async def logout(response: Response):
     # Create response with redirect to home page
@@ -587,6 +636,28 @@ async def watch(request: Request, video_id: str, auth_token: str = Cookie(None))
     # Increment views
     video['views_count'] = video.get('views_count', 0) + 1
     save_db(db)
+    
+    # Add to watch history
+    from auth import load_users, save_users
+    users = load_users()
+    if username in users:
+        # Check if video is already in watch history
+        watch_history = users[username].get('watch_history', [])
+        # Remove existing entry if it exists to keep only the latest watch
+        watch_history = [v for v in watch_history if v['video_id'] != video_id]
+        # Add to watch history
+        watch_history.append({
+            'video_id': video_id,
+            'title': video['title'],
+            'thumbnail_path': video['thumbnail_path'],
+            'watched_at': datetime.now().isoformat()
+        })
+        # Keep only last 50 watched videos
+        if len(watch_history) > 50:
+            watch_history = watch_history[-50:]
+        users[username]['watch_history'] = watch_history
+        save_users(users)
+    
     return templates.TemplateResponse("watch.html", {"request": request, "video": video, "current_user": user})
 
 @app.post("/add_video")

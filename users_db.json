@@ -7,7 +7,9 @@
     "is_active": true,
     "role": "admin",
     "last_login": null,
-    "login_count": 0
+    "login_count": 0,
+    "watch_history": [],
+    "liked_videos": []
   },
   "ojha.radhey1995": {
     "username": "ojha.radhey1995",
@@ -17,6 +19,8 @@
     "is_active": true,
     "role": "user",
     "last_login": null,
-    "login_count": 0
+    "login_count": 0,
+    "watch_history": [],
+    "liked_videos": []
   }
 }
