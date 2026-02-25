@@ -204,6 +204,12 @@
                 </div>
 
                 <!-- Action Buttons -->
+                {% set liked = False %}
+                {% for v in current_user.liked_videos %}
+                    {% if v.video_id == video.video_id %}
+                        {% set liked = True %}
+                    {% endif %}
+                {% endfor %}
                 <div class="button-group">
                     <button class="btn-youtube" onclick="openYouTube()">
                         <i class="fab fa-youtube"></i> Full YouTube
@@ -212,8 +218,8 @@
                         <i class="fas fa-play"></i> Play in VLC
                     </button>
                     <button class="btn-like" id="likeButton" onclick="toggleLike()">
-                        <i id="likeIcon" class="{% if video.video_id in [v.video_id for v in current_user.liked_videos] %}fas{% else %}far{% endif %} fa-heart"></i>
-                        <span id="likeText">{% if video.video_id in [v.video_id for v in current_user.liked_videos] %}Liked{% else %}Like{% endif %}</span>
+                        <i id="likeIcon" class="{% if liked %}fas{% else %}far{% endif %} fa-heart"></i>
+                        <span id="likeText">{% if liked %}Liked{% else %}Like{% endif %}</span>
                     </button>
                     <button class="btn-secondary" onclick="copyVideo('{{ video.video_id }}')" style="background: rgba(0, 123, 255, 0.2); border: 1px solid #007bff; color: #007bff;">
                         <i class="fas fa-copy"></i> Copy
