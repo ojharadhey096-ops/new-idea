@@ -28,6 +28,13 @@
         "watched_at": "2026-02-25T17:41:09.786873"
       }
     ],
-    "liked_videos": []
+    "liked_videos": [
+      {
+        "video_id": "dQw4w9WgXcQ_ojha.radhey1995",
+        "title": "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster)",
+        "thumbnail_path": "static/thumbnails/dQw4w9WgXcQ.jpg",
+        "liked_at": "2026-02-25T17:47:54.092719"
+      }
+    ]
   }
 }
